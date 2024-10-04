@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  db:
+    container_name: db
+    image: postgres:17-alpine
+    volumes:
+      - data:/var/lib/postgresql/data
+    env_file:
+      - ../.env
+    ports:
+      - "5432:5432"
+    networks:
+      - db
+
+  forum_app:
+    container_name: forum_app
+    build:
+      context: ./..
+      dockerfile: docker/python/Dockerfile
+    environment:
+      - DJANGO_SETTINGS_MODULE
+    env_file:
+      - ../.env
+    command: /start-web.sh
+    volumes:
+      - ..:/code
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - db
+
+volumes:
+  data:
+
+networks:
+  db:
