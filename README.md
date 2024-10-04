@@ -108,4 +108,5 @@ to file: `--output=<filename>`<br>
 colorized report: `--output=colorized`<br>
 message template: `--msg-template='{msg_id}:{line:3d},{column}: {obj}: {msg}'`<br>
 [Format Reference](https://pylint.readthedocs.io/en/stable/user_guide/usage/output.html)<br>
-[Standard Checkers Reference](https://pylint.readthedocs.io/en/stable/user_guide/configuration/all-options.html)
+[Standard Checkers Reference](https://pylint.readthedocs.io/en/stable/user_guide/configuration/all-options.html)<br>
+[CI/CD Example](https://www.linkedin.com/pulse/python-code-quality-check-using-pylint-github-actions-muhammad-rashid-jhfjf/)
