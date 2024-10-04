@@ -83,5 +83,29 @@ We are committed to delivering a platform that is not just a marketplace for ide
 - Each user story can be broken down into smaller tasks and developed in sprints.
 - Regular feedback from both user groups (startups and investors) should be incorporated.
 
+### Pylint Documentation
 
+- Check if pylint and pylint-django have been installed with the `poetry install` command:<br>
+`pylint --version`<br>
+`pip show pylint-django`
 
+- Install pylint and pylint-django if needed:<br>
+`pip install pylint pylint-django`
+
+- Run pylint for a specific module, app or the whole project:<br>
+`pylint <module.py>`<br>
+`pylint <app_name>`<br>
+`pylint <project_folder>/`
+
+- Use `--ignore=...` to ignore folders or files:<br>
+`pylint --ignore=<folder_name> <project_folder>/`
+
+- Identify and fix suggested errors:<br>
+[Messages Overview Reference](https://pylint.readthedocs.io/en/stable/user_guide/messages/messages_overview.html#messages-overview)
+
+- (Optional) Consider changing output format:<br>
+to file: `--output=<filename>`<br>
+colorized report: `--output=colorized`<br>
+message template: `--msg-template='{msg_id}:{line:3d},{column}: {obj}: {msg}'`<br>
+[Format Reference](https://pylint.readthedocs.io/en/stable/user_guide/usage/output.html)<br>
+[Standard Checkers Reference](https://pylint.readthedocs.io/en/stable/user_guide/configuration/all-options.html)
