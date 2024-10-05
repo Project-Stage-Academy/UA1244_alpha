@@ -1,6 +1,6 @@
 FROM python:3.12-alpine
 
-
+ARG DJANGO_ENV=production
 ENV DJANGO_ENV=${DJANGO_ENV} \
   # python:
   PYTHONFAULTHANDLER=1 \
