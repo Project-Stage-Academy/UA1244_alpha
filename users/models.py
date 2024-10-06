@@ -4,6 +4,10 @@ from django.core.validators import EmailValidator, RegexValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.contrib.auth.password_validation import validate_password
+import logging
+import json
+
+logger = logging.getLogger(__name__)
 
 
 class CustomUserManager(BaseUserManager):
@@ -22,43 +26,56 @@ class CustomUserManager(BaseUserManager):
             User: Newly created user instance.
 
         Raises:
-            ValueError: If email is not provided or password is not set.
+            ValueError: If email is not provided or password is invalid.
         """
         if not email:
             raise ValueError('The Email field must be set')
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         if password:
-            user.set_password(password)
-            validate_password(password, user)
+            if not self.validate_password(password):
+                raise ValueError(
+                    'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.')
+            try:
+                validate_password(password)
+                user.set_password(password)
+            except ValidationError as e:
+                raise ValueError(f"Invalid password: {', '.join(e.messages)}")
         else:
             raise ValueError('Password must be provided')
         user.save(using=self._db)
+        logger.info(f"New user created: {email}")
         return user
 
-    def create_superuser(self, email, password=None):
+    def create_superuser(self, email, password=None, **extra_fields):
         """
         Create and save a new superuser with the given email and password.
 
         Args:
             email (str): Superuser's email address.
             password (str, optional): Superuser's password.
+            **extra_fields: Additional fields for the superuser.
 
         Returns:
             User: Newly created superuser instance.
         """
-        user = self.create_user(
-            email,
-            password=password,
-            first_name='Admin',
-            last_name='User',
-            user_phone='',
-            is_staff=True,
-            is_superuser=True,
-            is_active=True,
-            role=User.ADMIN
-        )
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+        user = self.create_user(email, password, **extra_fields)
+        if 'Admin' not in self.ALLOWED_ROLES:
+            raise ValidationError(f"Cannot add role: Admin")
+        user.add_role('Admin')
+        logger.info(f"New superuser created: {email}")
         return user
+
+
+class Role(models.Model):
+    """Model to represent user roles."""
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -69,22 +86,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     and role management. It supports multiple roles for users, soft delete
     functionality, and custom methods for role manipulation.
     """
+    ALLOWED_ROLES = ['Investor', 'Startup', 'Admin']
 
-    USER = 1
-    INVESTOR = 2
-    STARTUP = 4
-    ADMIN = 8
-
-    ROLE_CHOICES = [
-        (USER, 'User'),
-        (INVESTOR, 'Investor'),
-        (STARTUP, 'Startup'),
-        (ADMIN, 'Admin'),
-    ]
-
-    id = models.AutoField(primary_key=True)
-    email = models.EmailField(unique=True, max_length=255, db_index=True)
-    password = models.CharField(max_length=255)
+    email = models.EmailField(max_length=255, db_index=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     user_phone = models.CharField(
@@ -94,16 +98,17 @@ class User(AbstractBaseUser, PermissionsMixin):
             message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed."
         )]
     )
-    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=USER, db_index=True)
-    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
-    about_me = models.CharField(max_length=255, blank=True, null=True)
+    roles = models.ManyToManyField(Role, related_name='users')
+    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, default='')
+    about_me = models.CharField(max_length=255, blank=True, default='')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_soft_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(blank=True, null=True)
     last_login = models.DateTimeField(null=True, blank=True)
-    original_email = models.EmailField(max_length=255, blank=True, null=True)
+    original_data = models.JSONField(null=True, blank=True)
 
     objects = CustomUserManager()
 
@@ -116,11 +121,13 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_full_name(self):
         """Return the user's full name."""
-        return f"{self.first_name} {self.last_name}"
+        first_name = self.first_name.strip() or 'Unknown first name'
+        last_name = self.last_name.strip() or 'Unknown last name'
+        return f"{first_name} {last_name}".strip()
 
     def get_roles_display(self):
         """Return a string representation of the user's roles."""
-        return ', '.join(name for value, name in self.ROLE_CHOICES if self.role & value)
+        return ', '.join(role.name for role in self.roles.all())
 
     def add_role(self, role_name):
         """
@@ -132,13 +139,21 @@ class User(AbstractBaseUser, PermissionsMixin):
         Raises:
             ValidationError: If the role is invalid or already assigned.
         """
-        role_dict = {r[1].upper(): r[0] for r in self.ROLE_CHOICES}
-        if role_name.upper() not in ['INVESTOR', 'STARTUP']:
-            raise ValidationError("You can only add Investor or Startup roles.")
-        if self.has_role(role_name):
+        if role_name not in self.ALLOWED_ROLES:
+            raise ValidationError(f"Cannot add role: {role_name}")
+        if not self.is_active:
+            raise ValidationError("This account is not active.")
+        if self.is_soft_deleted:
+            raise ValidationError("This account is deleted.")
+        try:
+            role = Role.objects.get(name=role_name)
+        except Role.DoesNotExist:
+            raise ValidationError(f"Role '{role_name}' does not exist.")
+        if self.roles.filter(name=role_name).exists():
             raise ValidationError(f"You already have the role: {role_name}")
-        self.role |= role_dict[role_name.upper()]
+        self.roles.add(role)
         self.save()
+        logger.info(f"Role '{role_name}' added to user {self.email}")
 
     def remove_role(self, role_name):
         """
@@ -150,15 +165,19 @@ class User(AbstractBaseUser, PermissionsMixin):
         Raises:
             ValidationError: If the role is invalid or not assigned.
         """
-        role_dict = {r[1].upper(): r[0] for r in self.ROLE_CHOICES}
-        if role_name.upper() not in ['INVESTOR', 'STARTUP']:
-            raise ValidationError("Users can only remove Investor or Startup roles.")
-        if not self.has_role(role_name):
+        if role_name not in self.ALLOWED_ROLES:
+            raise ValidationError(f"Cannot remove role: {role_name}")
+        if not self.is_active:
+            raise ValidationError("This account is not active.")
+        if self.is_soft_deleted:
+            raise ValidationError("This account is deleted.")
+        try:
+            role = self.roles.get(name=role_name)
+        except Role.DoesNotExist:
             raise ValidationError(f"User does not have the role: {role_name}")
-        self.role &= ~role_dict[role_name.upper()]
-        if self.role == 0:
-            self.role = self.USER
+        self.roles.remove(role)
         self.save()
+        logger.info(f"Role '{role_name}' removed from user {self.email}")
 
     def has_role(self, role_name):
         """
@@ -170,77 +189,99 @@ class User(AbstractBaseUser, PermissionsMixin):
         Returns:
             bool: True if the user has the role, False otherwise.
         """
-        role_dict = {r[1].upper(): r[0] for r in self.ROLE_CHOICES}
-        return self.role & role_dict.get(role_name.upper(), 0) != 0
+        if role_name not in self.ALLOWED_ROLES:
+            raise ValidationError(f"Role '{role_name}' is not allowed.")
+        return self.roles.filter(name=role_name).exists()
 
     def is_admin(self):
         """Check if the user has admin role."""
-        return bool(self.role & self.ADMIN)
+        return self.has_role('Admin')
 
     def has_multiple_roles(self):
         """Check if the user has multiple roles."""
-        return bin(self.role).count('1') > 1
+        return self.roles.exists() and self.roles.count() > 1
 
     def soft_delete(self):
         """
         Soft delete the user account.
 
         This method deactivates the account, sets the deleted_at timestamp,
-        and anonymizes user data.
+        and marks the account as deleted. Original user data is preserved.
 
         Raises:
             ValidationError: If the account is already inactive or deleted.
         """
-        if not self.is_active:
-            raise ValidationError("This account is already inactive.")
-        if self.deleted_at:
-            raise ValidationError("This account has already been deleted.")
-        self.is_active = False
-        self.deleted_at = timezone.now()
-        self.original_email = self.email
-        self.email = f"deleted_{self.id}_{self.email}"
+        if not self.is_active or self.is_soft_deleted:
+            raise ValidationError("This account is already inactive or deleted.")
+
+        original_data = {
+            'email': self.email,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'user_phone': self.user_phone,
+            'about_me': self.about_me,
+        }
+        self.original_data = json.dumps(original_data)
+
+        self.email = f"deleted_{self.id}@example.com"
         self.first_name = "Deleted"
         self.last_name = "User"
         self.user_phone = ""
         self.about_me = ""
         self.profile_picture.delete(save=False)
+        self.is_active = False
+        self.is_soft_deleted = True
+        self.deleted_at = timezone.now()
         self.save()
+        logger.info(f"User {self.id} soft deleted")
 
     def reactivate(self):
         """
         Reactivate a soft-deleted user account.
 
-        This method reactivates the account, clears the deleted_at timestamp,
-        and restores the original email.
+        This method reactivates the account and restores the original user data.
 
         Raises:
-            ValidationError: If the account is already active or not deleted.
+            ValidationError: If the account is already active or not soft deleted.
         """
-        if self.is_active:
-            raise ValidationError("This account is already active.")
-        if not self.deleted_at:
-            raise ValidationError("This account was not deleted.")
+        if self.is_active or not self.is_soft_deleted:
+            raise ValidationError("This account is already active or not soft deleted.")
+
+        if self.original_data:
+            original_data = json.loads(self.original_data)
+            self.email = original_data['email']
+            self.first_name = original_data['first_name']
+            self.last_name = original_data['last_name']
+            self.user_phone = original_data['user_phone']
+            self.about_me = original_data['about_me']
+            self.original_data = None
+
         self.is_active = True
+        self.is_soft_deleted = False
         self.deleted_at = None
-        self.email = self.original_email
-        self.original_email = None
         self.save()
+        logger.info(f"User {self.id} reactivated")
 
     def save(self, *args, **kwargs):
         """
         Save the user instance to the database.
 
-        This method overrides the default save method to validate the password
-        before saving a new user instance.
+        This method overrides the default save method to ensure
+        the email is always normalized before saving.
 
         Args:
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
         """
-        if self._state.adding and self.password:
-            validate_password(self.password, self)
+        self.email = self.email.lower().strip()
+
+        if User.objects.filter(email=self.email).exclude(pk=self.pk).exists():
+            raise ValidationError("Email already exists.")
+
         super().save(*args, **kwargs)
 
     class Meta:
+        unique_together = [('email', 'is_active')]
         verbose_name = 'User'
         verbose_name_plural = 'Users'
+        default_manager_name = 'objects'
