@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Group, Permission
 from django.core.validators import EmailValidator, RegexValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -86,6 +86,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     and role management. It supports multiple roles for users, soft delete
     functionality, and custom methods for role manipulation.
     """
+    groups = models.ManyToManyField(Group, related_name='custom_user_groups')
+    user_permissions = models.ManyToManyField(Permission, related_name='custom_user_permissions')
+
     ALLOWED_ROLES = ['Investor', 'Startup', 'Admin']
 
     email = models.EmailField(max_length=255, db_index=True)
