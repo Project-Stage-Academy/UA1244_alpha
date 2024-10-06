@@ -1,1 +1,1 @@
-from rest_framework import serializersfrom profiles.models import StartUpProfileclass StartUpProfileSerializer(serializers.ModelSerializer):    class Meta:        model = StartUpProfile        fields = ['name', 'description', 'startup_logo', 'website']
+from rest_framework import serializersfrom profiles.models import StartUpProfileclass StartUpProfileSerializer(serializers.ModelSerializer):    class Meta:        model = StartUpProfile        fields = ['name', 'description', 'startup_logo', 'website']
