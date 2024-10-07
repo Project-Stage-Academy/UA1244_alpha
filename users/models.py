@@ -63,9 +63,6 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
         user = self.create_user(email, password, **extra_fields)
-        if 'Admin' not in self.ALLOWED_ROLES:
-            raise ValidationError(f"Cannot add role: Admin")
-        user.add_role('Admin')
         logger.info(f"New superuser created: {email}")
         return user
 
@@ -144,19 +141,18 @@ class User(AbstractBaseUser, PermissionsMixin):
         """
         if role_name not in self.ALLOWED_ROLES:
             raise ValidationError(f"Cannot add role: {role_name}")
-        if not self.is_active:
-            raise ValidationError("This account is not active.")
-        if self.is_soft_deleted:
-            raise ValidationError("This account is deleted.")
-        try:
-            role = Role.objects.get(name=role_name)
-        except Role.DoesNotExist:
-            raise ValidationError(f"Role '{role_name}' does not exist.")
-        if self.roles.filter(name=role_name).exists():
-            raise ValidationError(f"You already have the role: {role_name}")
-        self.roles.add(role)
-        self.save()
-        logger.info(f"Role '{role_name}' added to user {self.email}")
+        if not self.is_active or self.is_soft_deleted:
+            raise ValidationError("This account is not active or is deleted.")
+
+        role, created = Role.objects.get_or_create(name=role_name)
+        if not self.roles.filter(pk=role.pk).exists():
+            self.roles.add(role)
+            self.save()
+            logger.info(f"Role '{role_name}' added to user {self.email}")
+            if hasattr(self, '_cached_roles'):
+                del self._cached_roles
+        else:
+            logger.warning(f"User {self.email} already has the role: {role_name}")
 
     def remove_role(self, role_name):
         """
@@ -170,17 +166,17 @@ class User(AbstractBaseUser, PermissionsMixin):
         """
         if role_name not in self.ALLOWED_ROLES:
             raise ValidationError(f"Cannot remove role: {role_name}")
-        if not self.is_active:
-            raise ValidationError("This account is not active.")
-        if self.is_soft_deleted:
-            raise ValidationError("This account is deleted.")
-        try:
-            role = self.roles.get(name=role_name)
-        except Role.DoesNotExist:
-            raise ValidationError(f"User does not have the role: {role_name}")
-        self.roles.remove(role)
-        self.save()
-        logger.info(f"Role '{role_name}' removed from user {self.email}")
+        if not self.is_active or self.is_soft_deleted:
+            raise ValidationError("This account is not active or is deleted.")
+        role = self.roles.filter(name=role_name).first()
+        if role:
+            self.roles.remove(role)
+            self.save()
+            logger.info(f"Role '{role_name}' removed from user {self.email}")
+            if hasattr(self, '_cached_roles'):
+                del self._cached_roles
+        else:
+            logger.warning(f"User {self.email} does not have the role: {role_name}")
 
     def has_role(self, role_name):
         """
