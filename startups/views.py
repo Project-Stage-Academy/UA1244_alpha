@@ -6,8 +6,8 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from profiles.models import StartUpProfile
-from profiles.serializers import StartUpProfileSerializer
+from startups.models import StartUpProfile
+from startups.serializers import StartUpProfileSerializer
 
 
 class StartUpProfilesView(generics.ListAPIView):

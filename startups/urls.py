@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 
-from profiles.views import StartUpProfilesView, StartUpProfileCreate, StartUpProfileUpdate, StartupProfileViewById
+from startups.views import StartUpProfilesView, StartUpProfileCreate, StartUpProfileUpdate, StartupProfileViewById
 
 urlpatterns = [
     path('startups/', StartUpProfilesView.as_view(), name='startup-list'),
