@@ -32,7 +32,6 @@ RUN poetry install --no-root
 COPY . /code
 
 COPY ./docker/python/start-web.sh /start-web.sh
-COPY ./docker/python/start-web.sh /wait-for-postgres.sh
 
 # Setting up proper permissions:
 RUN chmod +x /start-web.sh \
