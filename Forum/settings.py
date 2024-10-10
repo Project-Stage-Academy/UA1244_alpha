@@ -10,10 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
-from datetime import timedelta
-
 from dotenv import load_dotenv
 from pathlib import Path
+from datetime import timedelta
+
 
 
 load_dotenv()
@@ -47,16 +47,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'users',
     'profiles',
     'projects',
     'communications',
     'dashboard',
+    'commands',
     'djoser',
     'rest_framework',
     'rest_framework_simplejwt',
-    'commands'
 ]
 
 MIDDLEWARE = [
@@ -102,6 +101,11 @@ DATABASES = {
         'HOST': os.getenv('DB_HOST'),
         'PORT': os.getenv('DB_PORT'),
     }
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
 }
 
 
