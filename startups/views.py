@@ -1,7 +1,9 @@
 from django.http import Http404
-from django.shortcuts import render
-from rest_framework import generics, status
-from rest_framework.exceptions import PermissionDenied, NotFound
+from rest_framework import (
+    generics,
+    status,
+)
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -26,10 +28,12 @@ class StartUpProfileCreate(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
-        return Response({
-            'message': 'Startup profile created successfully',
-            'data': response.data
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                'message': 'Startup profile created successfully',
+                'data': response.data,
+            }, status=status.HTTP_201_CREATED,
+        )
 
 
 class StartUpProfileUpdate(generics.UpdateAPIView):
@@ -44,18 +48,22 @@ class StartUpProfileUpdate(generics.UpdateAPIView):
         try:
             updating_obj = self.get_object()
         except Http404:
-            return Response({
-                'message': 'Startup profile not found'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {
+                    'message': 'Startup profile not found',
+                }, status=status.HTTP_404_NOT_FOUND,
+            )
 
         if updating_obj.user_id != request.user:
             raise PermissionDenied("You do not have permission to update this profile")
 
         response = super().update(request, *args, **kwargs)
-        return Response({
-            'message': 'Startup profile updated successfully',
-            'data': response.data
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                'message': 'Startup profile updated successfully',
+                'data': response.data,
+            }, status=status.HTTP_200_OK,
+        )
 
 
 class StartupProfileViewById(generics.RetrieveAPIView):
@@ -77,7 +85,9 @@ class StartupProfileViewById(generics.RetrieveAPIView):
         try:
             obj = self.get_object()
         except Http404:
-            return Response({
-                'message': 'Startup profile not found'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {
+                    'message': 'Startup profile not found',
+                }, status=status.HTTP_404_NOT_FOUND,
+            )
         return Response(obj, status=status.HTTP_200_OK)
