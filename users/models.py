@@ -200,6 +200,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         """Check if the user has multiple roles."""
         return self.roles.exists() and self.roles.count() > 1
 
+    # def set_password(self, raw_password):
+    #     """"""
+    #     super().set_password(raw_password)
+
     def soft_delete(self):
         """
         Soft delete the user account.
