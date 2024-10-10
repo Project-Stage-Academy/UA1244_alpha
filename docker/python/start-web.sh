@@ -8,6 +8,11 @@ python manage.py wait_for_db
 # Run migrations
 python manage.py migrate
 
+# Load environment variables from the .env
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
 # Check environment and start the appropriate server
 if [[ "${DJANGO_ENV,,}" = "production" ]]; then
   gunicorn -b 0.0.0.0:8000 \

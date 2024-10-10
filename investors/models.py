@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -18,6 +19,11 @@ class InvestorProfile(models.Model):
     preferred_stage = models.IntegerField(choices=PreferredStageChoices.choices, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        super().clean()
+        if self.investor_logo and not self.investor_logo.name.endswith(('png', 'jpg', 'jpeg')):
+            raise ValidationError('Only PNG, JPG, and JPEG files are allowed.')
 
     def __str__(self) -> str:
         return f"ID: {self.user.id}, Email: {self.user.email}, Stage: {self.get_preferred_stage_display()}"
