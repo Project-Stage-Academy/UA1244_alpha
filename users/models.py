@@ -1,5 +1,6 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Group, Permission
+from django.contrib.auth.models import (AbstractBaseUser,
+                                        BaseUserManager, PermissionsMixin, Group, Permission)
 from django.core.validators import EmailValidator, RegexValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -32,10 +33,8 @@ class CustomUserManager(BaseUserManager):
             raise ValueError('The Email field must be set')
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
+
         if password:
-            if not self.validate_password(password):
-                raise ValueError(
-                    'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.')
             try:
                 validate_password(password)
                 user.set_password(password)
@@ -88,7 +87,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     ALLOWED_ROLES = ['Investor', 'Startup', 'Admin']
 
-    email = models.EmailField(max_length=255, db_index=True)
+    email = models.EmailField(max_length=255, db_index=True, unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     user_phone = models.CharField(
