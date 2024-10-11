@@ -2,7 +2,7 @@ DC = docker compose
 EXEC = docker exec -it
 LOGS = docker logs
 ENV = --env-file .env
-FILE = docker/docker_compose.yml
+FILE = docker/docker-compose.yml
 APP_CONTAINER = forum_app
 DB_CONTAINER = db
 
