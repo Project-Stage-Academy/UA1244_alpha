@@ -1,8 +1,12 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from .models import Role
 
+
 User = get_user_model()
+
 
 class CustomUserCreateSerializer(serializers.ModelSerializer):
     """
@@ -50,22 +54,29 @@ class CustomUserCreateSerializer(serializers.ModelSerializer):
         Update an existing user instance with validated data.
 
         Args:
-            instance (User): The current user instance.
+            instance (User  ): The current user instance.
             validated_data (dict): The validated data for updating the user.
 
         Returns:
             User: The updated user instance.
         """
-        instance.email = validated_data.get('email', instance.email)
-        instance.first_name = validated_data.get('first_name', instance.first_name)
-        instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.user_phone = validated_data.get('user_phone', instance.user_phone)
-        instance.about_me = validated_data.get('about_me', instance.about_me)
-        instance.profile_picture = validated_data.get('profile_picture', instance.profile_picture)
-        instance.roles.set(validated_data.get('roles', instance.roles.all()))
+        for field, value in validated_data.items():
+            if field != 'password' and field != 'roles':
+                setattr(instance, field, value)
+
+        if 'roles' in validated_data:
+            roles = validated_data['roles']
+            if not all(role in instance.ALLOWED_ROLES for role in roles):
+                raise ValueError("Invalid role(s) specified")
+            instance.roles.set(roles)
 
         if 'password' in validated_data:
-            instance.set_password(validated_data['password'])
+            password = validated_data['password']
+            try:
+                validate_password(password)
+            except ValidationError as e:
+                raise ValueError("Invalid password: {}".format(e))
+            instance.set_password(password)
 
         instance.save()
         return instance
