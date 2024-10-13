@@ -12,26 +12,72 @@ services:
       - "5432:5432"
     networks:
       - backend-network
+    restart: always
 
   forum_app:
     container_name: forum_app
     build:
       context: ./..
       dockerfile: docker/python/Dockerfile
-    environment:
-      - DJANGO_SETTINGS_MODULE
+    volumes:
+      - ..:/code
     env_file:
       - ../.env
     command: /start-web.sh
-    volumes:
-      - ..:/code
-    restart: always
     depends_on:
       - db
+      - redis
     ports:
       - "8000:8000"
     networks:
       - backend-network
+    restart: always
+
+  flower:
+    hostname: flower
+    build:
+      context: ./..
+      dockerfile: docker/python/Dockerfile
+    command: celery -A Forum.celery.app flower
+    volumes:
+      - ..:/code
+    env_file:
+      - ../.env
+    depends_on:
+      - forum_app
+      - redis
+    ports:
+      - "5555:5555"
+    networks:
+      - backend-network
+    restart: always
+
+  worker:
+    container_name: worker_1
+    hostname: worker
+    build:
+      context: ./..
+      dockerfile: docker/python/Dockerfile
+    command: celery -A Forum.celery.app worker --loglevel=info
+    volumes:
+      - ..:/code
+    env_file:
+      - ../.env
+    depends_on:
+      - forum_app
+      - redis
+    networks:
+      - backend-network
+    restart: always
+
+  redis:
+    container_name: redis
+    image: redis:7.2.4-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - backend-network
+    restart: always
 
 volumes:
   data:

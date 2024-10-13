@@ -1,11 +1,16 @@
-from django.contrib import admin
 from django.urls import path
 
-from profiles.views import StartUpProfilesView, StartUpProfileCreate, StartUpProfileUpdate, StartupProfileViewById
+from startups.views import (
+    StartUpProfileCreate,
+    StartUpProfilesView,
+    StartUpProfileUpdate,
+    StartupProfileViewById,
+)
+
 
 urlpatterns = [
     path('startups/', StartUpProfilesView.as_view(), name='startup-list'),
     path('create', StartUpProfileCreate.as_view(), name='startup-create'),
     path('startups/<int:pk>/', StartUpProfileUpdate.as_view(), name='startup-update'),
-    path('startup-profile/<int:pk>/', StartupProfileViewById.as_view(), name='profile-by-id')
+    path('startup-profile/<int:pk>/', StartupProfileViewById.as_view(), name='profile-by-id'),
 ]
