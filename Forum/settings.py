@@ -193,6 +193,8 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
@@ -203,16 +205,26 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
 }
 
+
 DJOSER = {
     'LOGIN_FIELD': 'email',
     'USER_CREATE_PASSWORD_RETYPE': True,
+    'USERNAME_CHANGED_EMAIL_CONFIRMATION': True,
+    'PASSWORD_CHANGED_EMAIL_CONFIRMATION': True,
+    'SET_USERNAME_RETYPE': True,
+    'SET_PASSWORD_RETYPE': True,
+    'ACTIVATION_URL': 'activate/{uid}/{token}',
     'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/{uid}/{token}',
     'USERNAME_RESET_CONFIRM_URL': 'email/reset/confirm/{uid}/{token}',
     'SEND_ACTIVATION_EMAIL': False,
     'SERIALIZERS': {
         'user_create': 'djoser.serializers.UserCreateSerializer',
-        'user': 'djoser.serializers.UserSerializer',
-        'current_user': 'djoser.serializers.UserSerializer',
+        'user': 'users.serializers.UserSerializer',
+        # 'user': 'djoser.serializers.UserSerializer',
+        'current_user': 'users.serializers.UserSerializer',
+        # 'current_user': 'djoser.serializers.UserSerializer',
         'user_delete': 'djoser.serializers.UserDeleteSerializer',
     },
 }
+
+AUTH_USER_MODEL = 'users.User'
