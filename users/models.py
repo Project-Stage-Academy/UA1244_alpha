@@ -1,12 +1,19 @@
-from django.db import models
-from django.contrib.auth.models import (AbstractBaseUser,
-                                        BaseUserManager, PermissionsMixin, Group, Permission)
-from django.core.validators import EmailValidator, RegexValidator
-from django.core.exceptions import ValidationError
-from django.utils import timezone
-from django.contrib.auth.password_validation import validate_password
-import logging
 import json
+import logging
+
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    BaseUserManager,
+    Group,
+    Permission,
+    PermissionsMixin,
+)
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
+from django.db import models
+from django.utils import timezone
+
 
 logger = logging.getLogger(__name__)
 
@@ -92,10 +99,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=100)
     user_phone = models.CharField(
         max_length=20,
-        validators=[RegexValidator(
-            regex=r'^\+?1?\d{9,15}$',
-            message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed."
-        )]
+        validators=[
+            RegexValidator(
+                regex=r'^\+?1?\d{9,15}$',
+                message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.",
+            ),
+        ],
     )
     roles = models.ManyToManyField(Role, related_name='users')
     profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, default='')

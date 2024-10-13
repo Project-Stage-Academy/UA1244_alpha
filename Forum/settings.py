@@ -10,10 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
-from dotenv import load_dotenv
 from pathlib import Path
 from datetime import timedelta
 
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'users',
-    'profiles',
+    'startups',
+    'investors',
     'projects',
     'communications',
     'dashboard',
