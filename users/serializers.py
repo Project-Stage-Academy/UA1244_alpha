@@ -60,23 +60,16 @@ class CustomUserCreateSerializer(serializers.ModelSerializer):
         Returns:
             User: The updated user instance.
         """
+        if not instance.is_active:
+            raise serializers.ValidationError("Inactive users cannot be updated.")
+
         for field, value in validated_data.items():
-            if field != 'password' and field != 'roles':
-                setattr(instance, field, value)
-
-        if 'roles' in validated_data:
-            roles = validated_data['roles']
-            if not all(role in instance.ALLOWED_ROLES for role in roles):
-                raise ValueError("Invalid role(s) specified")
-            instance.roles.set(roles)
-
-        if 'password' in validated_data:
-            password = validated_data['password']
-            try:
-                validate_password(password)
-            except ValidationError as e:
-                raise ValueError("Invalid password: {}".format(e))
-            instance.set_password(password)
+            if field == 'password':
+                instance.set_password(value)
+            elif field == 'roles':
+                instance.roles.set(value)  
+            else:
+                setattr(instance, field, value)  
 
         instance.save()
         return instance
