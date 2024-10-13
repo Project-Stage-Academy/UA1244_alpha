@@ -1,8 +1,12 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from .models import Role
 
+
 User = get_user_model()
+
 
 class CustomUserCreateSerializer(serializers.ModelSerializer):
     """
@@ -56,16 +60,25 @@ class CustomUserCreateSerializer(serializers.ModelSerializer):
         Returns:
             User: The updated user instance.
         """
-        instance.email = validated_data.get('email', instance.email)
-        instance.first_name = validated_data.get('first_name', instance.first_name)
-        instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.user_phone = validated_data.get('user_phone', instance.user_phone)
-        instance.about_me = validated_data.get('about_me', instance.about_me)
-        instance.profile_picture = validated_data.get('profile_picture', instance.profile_picture)
-        instance.roles.set(validated_data.get('roles', instance.roles.all()))
+        if not instance.is_active:
+            raise serializers.ValidationError("Inactive users cannot be updated.")
 
-        if 'password' in validated_data:
-            instance.set_password(validated_data['password'])
+        for field, value in validated_data.items():
+            if field == 'password':
+                instance.set_password(value)
+            elif field == 'roles':
+                instance.roles.set(value)
+            else:
+                setattr(instance, field, value)
 
         instance.save()
         return instance
+
+
+# class UserSerializer(serializers.ModelSerializer):
+#     roles = serializers.StringRelatedField(many=True)
+#
+#     class Meta:
+#         model = User
+#         fields = ('id', 'email', 'first_name', 'last_name', 'roles', 'about_me', 'profile_picture', 'is_active')
+#         read_only_fields = ('is_active',)
