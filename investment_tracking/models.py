@@ -7,7 +7,7 @@ from investors.models import InvestorProfile
 
 class InvestmentTracking(models.Model):
     investor_id = models.ForeignKey(InvestorProfile, on_delete = models.CASCADE)
-    startup_id = models.ForeignKey(StartUpProfile, on_dalate = models.CASCADE)
+    startup_id = models.ForeignKey(StartUpProfile, on_delete = models.CASCADE)
     saved_at = models.DateTimeField(auto_now_add = True)
 
     class Meta:
