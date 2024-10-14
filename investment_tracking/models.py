@@ -1,6 +1,4 @@
 from django.db import models
-
-# Create your models here.
 from startups.models import StartUpProfile
 from investors.models import InvestorProfile
 
