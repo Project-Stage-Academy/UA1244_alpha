@@ -4,6 +4,18 @@ from investors.models import InvestorProfile
 
 
 class InvestmentTracking(models.Model):
+    """
+    Model for tracking investments made by investors in startups.
+
+    Attributes:
+        investor_id (ForeignKey): The investor associated with the investment.
+        startup_id (ForeignKey): The startup associated with the investment.
+        saved_at (DateTimeField): The timestamp when the investment was recorded.
+
+    Methods:
+        __str__(): Returns a string representation of the investment tracking entry.
+    """
+     
     investor_id = models.ForeignKey(InvestorProfile, on_delete = models.CASCADE)
     startup_id = models.ForeignKey(StartUpProfile, on_delete = models.CASCADE)
     saved_at = models.DateTimeField(auto_now_add = True)
