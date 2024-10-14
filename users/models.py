@@ -14,6 +14,7 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
 
+from common.validators.image_validator import ImageValidator
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +108,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         ],
     )
     roles = models.ManyToManyField(Role, related_name='users')
-    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, default='')
+    profile_picture = models.ImageField(
+        upload_to='profile_pics/',
+        validators=[ImageValidator(max_size=5242880, max_width=1200, max_height=800)],
+        blank=True,
+        default=''
+    )
     about_me = models.CharField(max_length=255, blank=True, default='')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
