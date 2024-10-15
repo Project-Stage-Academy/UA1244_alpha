@@ -40,12 +40,17 @@ class ImageValidator:
             self.messages = self.default_messages
 
     def __call__(self, value):
-        # Validate file extension
-        valid_extensions = ('png', 'jpg', 'jpeg')
-        if not value.name.lower().endswith(valid_extensions):
+        """
+        Validate the uploaded image file by checking its format, dimensions, and size.
+
+        :param value: The uploaded file object to validate.
+        :raises ValidationError: If the file does not meet the validation criteria.
+        """
+        image = Image.open(value)
+        if image.format.lower() not in ('jpeg', 'png'):
             raise ValidationError(
-                self.messages['invalid_extension'],
-                code='invalid_extension'
+                self.messages['invalid_image_format'],
+                code='invalid_image_format'
             )
 
         try:
@@ -71,6 +76,13 @@ class ImageValidator:
         self._validate_dimensions(width, height)
 
     def _validate_dimensions(self, width, height):
+        """
+        Validate the dimensions of the image.
+
+        :param width: The width of the image in pixels.
+        :param height: The height of the image in pixels.
+        :raises ValidationError: If the dimensions exceed the allowed limits.
+        """
         if self.max_width is not None and width > self.max_width:
             self._raise_dimension_error()
 
@@ -78,6 +90,11 @@ class ImageValidator:
             self._raise_dimension_error()
 
     def _raise_dimension_error(self):
+        """
+        Raise a ValidationError if the image dimensions exceed the allowed limits.
+
+        :raises ValidationError: If the image's width or height exceeds the specified limits.
+        """
         raise ValidationError(
             self.messages['dimensions'],
             code='invalid_dimensions',
@@ -88,6 +105,12 @@ class ImageValidator:
         )
 
     def __eq__(self, other):
+        """
+        Compare two ImageValidator instances for equality.
+
+        :param other: Another ImageValidator instance to compare against.
+        :return: True if the two validators are equal, False otherwise.
+        """
         if not isinstance(other, ImageValidator):
             return False
         return (
