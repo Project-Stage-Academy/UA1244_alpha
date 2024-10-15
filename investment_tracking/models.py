@@ -24,6 +24,12 @@ class InvestmentTracking(models.Model):
         verbose_name = 'Investment Tracking'
         verbose_name_plural = 'Investment Tracking'
         ordering = ['-saved_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=["investor", "startup"],
+                name = "unique_investor_startup"
+            )
+        ]
 
     def __str__(self):
         return f"Investor: {self.investor.__str__}, StartUp: {self.startup.__str__()}, saved at:{self.saved_at}"

@@ -3,6 +3,7 @@ from users.models import User
 from investors.models import InvestorProfile
 from startups.models import StartUpProfile
 from .models import InvestmentTracking
+from django.db.utils import IntegrityError
 from django.utils import timezone
 from datetime import datetime
 
@@ -45,7 +46,18 @@ class TestInvestmentTracking(TestCase):
             website='www.strtas2.com'
         )
 
-    
+        cls.startup3 = StartUpProfile.objects.create(
+            user_id=user_2, 
+            name='Startup 3',
+            description='Test dddd3',
+            website='www.strtas3.com'
+        )
+
+        cls.error_investment_tracking = InvestmentTracking.objects.create(
+            investor=cls.investor,
+            startup=cls.startup3
+        )
+  
     def test_create_investment_tracking(self):
         investment_tracking = InvestmentTracking.objects.create(
             investor=self.investor,
@@ -61,3 +73,11 @@ class TestInvestmentTracking(TestCase):
         investment_tracking.startup = self.startup2
         investment_tracking.save()
         self.assertEqual(investment_tracking.startup, self.startup2)
+    
+    def test_catch_exceptions(self):
+        with self.assertRaises(IntegrityError):
+            investment_tracking = InvestmentTracking.objects.create(
+            investor=self.investor,
+            startup=self.startup3
+        )
+        
