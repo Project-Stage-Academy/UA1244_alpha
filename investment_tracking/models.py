@@ -8,7 +8,7 @@ class InvestmentTracking(models.Model):
     Model for tracking investments made by investors in startups.
 
     Attributes:
-        investor_id (ForeignKey): The investor associated with the investment.
+        investor (ForeignKey): The investor associated with the investment.
         startup_id (ForeignKey): The startup associated with the investment.
         saved_at (DateTimeField): The timestamp when the investment was recorded.
 
@@ -16,8 +16,8 @@ class InvestmentTracking(models.Model):
         __str__(): Returns a string representation of the investment tracking entry.
     """
      
-    investor_id = models.ForeignKey(InvestorProfile, on_delete = models.CASCADE)
-    startup_id = models.ForeignKey(StartUpProfile, on_delete = models.CASCADE)
+    investor = models.ForeignKey(InvestorProfile, on_delete = models.CASCADE)
+    startup = models.ForeignKey(StartUpProfile, on_delete = models.CASCADE)
     saved_at = models.DateTimeField(auto_now_add = True)
 
     class Meta:
@@ -26,4 +26,4 @@ class InvestmentTracking(models.Model):
         ordering = ['-saved_at']
 
     def __str__(self):
-        return f"Investor: {self.investor_id.__str__}, StartUp: {self.startup_id.__str__()}, saved at:{self.saved_at}"
+        return f"Investor: {self.investor.__str__}, StartUp: {self.startup.__str__()}, saved at:{self.saved_at}"

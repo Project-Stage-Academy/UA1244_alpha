@@ -10,8 +10,7 @@ from datetime import datetime
 class TestInvestmentTracking(TestCase):
 
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUpTestData(cls):
         
         user = User.objects.create_user(
             email="john@gmail.com",
@@ -49,16 +48,16 @@ class TestInvestmentTracking(TestCase):
     
     def test_create_investment_tracking(self):
         investment_tracking = InvestmentTracking.objects.create(
-            investor_id=self.investor,
-            startup_id=self.startup
+            investor=self.investor,
+            startup=self.startup
         )
         self.assertIsNotNone(investment_tracking.id)
 
     def test_update_investment_tracking(self):
         investment_tracking = InvestmentTracking.objects.create(
-            investor_id=self.investor,
-            startup_id=self.startup
+            investor=self.investor,
+            startup=self.startup
         )
-        investment_tracking.startup_id = self.startup2
+        investment_tracking.startup = self.startup2
         investment_tracking.save()
-        self.assertEqual(investment_tracking.startup_id, self.startup2)
+        self.assertEqual(investment_tracking.startup, self.startup2)
