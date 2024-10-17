@@ -30,6 +30,7 @@ urlpatterns = [
     path('communications/', include('communications.urls')),
     path('notifications/', include('notifications.urls')),
     path('dashboard/', include('dashboard.urls')),
+    path('investment_tracking/', include('investment_tracking.urls')),
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
 ]
