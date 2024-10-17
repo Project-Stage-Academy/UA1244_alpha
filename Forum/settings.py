@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'startups',
     'investors',
     'projects',
+    'investment_tracking',
     'communications',
     'dashboard',
     'commands',
