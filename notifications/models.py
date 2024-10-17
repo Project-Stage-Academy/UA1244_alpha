@@ -52,7 +52,7 @@ class Notification(models.Model):
     - read_at(DateTimeField)
     """
 
-    notification_type = models.IntegerChoices(choices=NotificationType.choices)
+    notification_type = models.IntegerField(choices=NotificationType.choices)
     status = models.IntegerField(
         choices=NotificationStatus.choices, default=NotificationStatus.UNREAD)
     investor = models.ForeignKey(InvestorProfile, on_delete=models.CASCADE)

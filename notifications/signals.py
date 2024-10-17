@@ -5,7 +5,7 @@ from .models import (
     Notification,
     NotificationType,
 )
-from investment_tracking import InvestmentTracking
+from investment_tracking.models import InvestmentTracking
 from .tasks import create_notification, send_notification_email
 
 
