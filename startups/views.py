@@ -53,7 +53,7 @@ class StartUpProfileUpdate(generics.UpdateAPIView):
         return get_success_response('Startup profile updated successfully', response.data)
 
 
-class StartupProfileViewById(generics.RetrieveAPIView):
+class StartUpProfileViewById(generics.RetrieveAPIView):
     queryset = StartUpProfile.objects.all()
     serializer_class = StartUpProfileSerializer
     permission_classes = [IsAuthenticated]
