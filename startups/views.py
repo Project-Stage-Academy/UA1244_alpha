@@ -1,10 +1,12 @@
 from django.http import Http404
-from rest_framework import generics, status
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import generics, status, filters
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from startups.filters import StartUpProfileFilter
 from startups.models import StartUpProfile
 from startups.serializers import StartUpProfileSerializer
 from startups.utils import (
@@ -14,25 +16,42 @@ from startups.utils import (
 
 
 class StartUpProfilesView(generics.ListAPIView):
+    """
+    API view to list all startup profiles with filtering and pagination.
+    """
     queryset = StartUpProfile.objects.all()
-    pagination_class = PageNumberPagination
     serializer_class = StartUpProfileSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = PageNumberPagination
 
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_class = StartUpProfileFilter
+
+    search_fields = ['name', 'description']
     ordering_fields = ['name', 'created_at']
     ordering = ['created_at']
 
 
 class StartUpProfileCreate(generics.CreateAPIView):
+    """
+    API view to create a new startup profile.
+    """
     serializer_class = StartUpProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
-        return get_success_response('Startup profile created successfully', response.data, status.HTTP_201_CREATED)
+        return get_success_response(
+            message='Startup profile created successfully',
+            data=response.data,
+            status=status.HTTP_201_CREATED
+        )
 
 
 class StartUpProfileUpdate(generics.UpdateAPIView):
+    """
+    API view to update an existing startup profile.
+    """
     queryset = StartUpProfile.objects.all()
     serializer_class = StartUpProfileSerializer
     permission_classes = [IsAuthenticated]
@@ -47,13 +66,19 @@ class StartUpProfileUpdate(generics.UpdateAPIView):
             return handle_object_not_found(e)
 
         if updating_obj.user_id != request.user:
-            raise PermissionDenied("You do not have permission to update this profile")
+            raise PermissionDenied("You do not have permission to update this profile.")
 
         response = super().update(request, *args, **kwargs)
-        return get_success_response('Startup profile updated successfully', response.data)
+        return get_success_response(
+            message='Startup profile updated successfully',
+            data=response.data
+        )
 
 
-class StartupProfileViewById(generics.RetrieveAPIView):
+class StartUpProfileViewById(generics.RetrieveAPIView):
+    """
+    API view to retrieve a specific startup profile by ID.
+    """
     queryset = StartUpProfile.objects.all()
     serializer_class = StartUpProfileSerializer
     permission_classes = [IsAuthenticated]
