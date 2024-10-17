@@ -4,6 +4,7 @@ import logging
 from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.utils import timezone
 
 from .models import Notification, NotificationType
 from investors.models import InvestorProfile
@@ -20,16 +21,17 @@ def create_notification(investor_id, startup_id, type_, message_id=None):
     startup = StartUpProfile.objects.get(startup_id=startup_id)
     Notification.objects.create(
         notification_type=type_,
-        investor=investor, startup=startup,
+        investor=investor,
+        startup=startup,
         message_id=message_id
     )
     
-@shared_task
-def send_notification(notification:Notification, email=True, push=True):
+@shared_task(bind=True, max_retries=3)
+def send_notification_email(self, notification:Notification):
     startup = notification.startup.user_id
     startupt_url = reverse('profile-by-id', args=[startup.startup_id])
     investor = notification.investor.user
-    investor_url = ...
+    investor_url = reverse('investor-profile-by-id', args=[investor.investor_id])
 
     match notification.notification_type:
         case NotificationType.FOLLOW:
@@ -50,14 +52,19 @@ def send_notification(notification:Notification, email=True, push=True):
             pass            
 
     try:
-        send_mail(
-            subject=subject, 
-            message=message, 
-            recipient_list=[recipient],
-            html_message=html_message
-        )
+        send_mail(subject=subject, message=message, 
+                  recipient_list=[recipient], html_message=html_message)
+        notification.sent_at = timezone.now()
+        notification.save()
+
     except Exception as e:
         logger.error(f'Error when sending notification email: {e}')
+        try:
+            raise self.retry(exc=e, countdown=30)
+        except self.MaxRetriesExceededError:
+            notification.update_delivery_status(sent=False)
+    else:
+        notification.update_delivery_status(sent=True)
 
 
 def render_email_html_message(recipient, message, profile_url, profile_type):
