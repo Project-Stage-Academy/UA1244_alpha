@@ -95,7 +95,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     ALLOWED_ROLES = ['Investor', 'Startup', 'Admin']
 
-    email = models.EmailField(max_length=255, db_index=True, unique=True)
+    email = models.EmailField('email address', max_length=255, unique=True, db_index=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     user_phone = models.CharField(
