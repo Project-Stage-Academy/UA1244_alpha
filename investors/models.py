@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from common.validators.image_validator import ImageValidator
 
 User = get_user_model()
 
@@ -15,15 +16,15 @@ class PreferredStageChoices(models.IntegerChoices):
 
 class InvestorProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='investors')
-    investor_logo = models.ImageField(upload_to='investor_logos/', blank=True, null=True)
+    investor_logo = models.ImageField(
+        upload_to='investor_logos/',
+        validators=[ImageValidator(max_size=5242880, max_width=1200, max_height=800)],
+        blank=True,
+        null=True
+    )
     preferred_stage = models.IntegerField(choices=PreferredStageChoices.choices, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    def clean(self):
-        super().clean()
-        if self.investor_logo and not self.investor_logo.name.endswith(('png', 'jpg', 'jpeg')):
-            raise ValidationError('Only PNG, JPG, and JPEG files are allowed.')
 
     def __str__(self) -> str:
         return f"ID: {self.user.id}, Email: {self.user.email}, Stage: {self.get_preferred_stage_display()}"
