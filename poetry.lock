@@ -508,6 +508,20 @@ files = [
 Django = ">=4.2"
 
 [[package]]
+name = "django-simple-history"
+version = "3.7.0"
+description = "Store model history and view/revert changes from admin site."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "django_simple_history-3.7.0-py3-none-any.whl", hash = "sha256:282cb2c4aa63f51547f17da7f2130abaa81ba01694676d19b88d52c94a57a52c"},
+    {file = "django_simple_history-3.7.0.tar.gz", hash = "sha256:ac3b7ca8b0d33f7ea6be8fe7fc98cf43415efa500ff5dfe736fbd1ebc0cf39f9"},
+]
+
+[package.dependencies]
+django = ">=4.2"
+
+[[package]]
 name = "django-templated-mail"
 version = "1.1.1"
 description = "Send emails using Django template system."
@@ -1482,4 +1496,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "fc529c48b3075ec3b3a117fa8d1dbde855414d7e9c89c0560997682a10de103f"
+content-hash = "b47505d25dd093c4fd33f94efe747ef590ce07bf4538d48b0a7d4e016cc04bf8"
