@@ -12,9 +12,11 @@ class NotificationType(models.IntegerChoices):
         
         - FOLLOW: 1
         - MESSAGE: 2
+        - UPDATE: 3
         """
         FOLLOW = 1, _('Follow')
         MESSAGE = 2, _('Message')
+        UPDATE = 3, _('Update')
     
 
 class NotificationStatus(models.IntegerChoices):
@@ -58,24 +60,16 @@ class Notification(models.Model):
         return f'{self.notification_type}: {self.investor} -> {self.startup}' \
         + f' {self.sent_at if self.sent_at else ""}'
     
+    def retrieve_message(self):
+        msg = None
+        if self.message_id:
+            try:
+                msg = Message.objects.get(message_id=self.message_id)
+            except Message.DoesNotExist:
+                pass
+        return msg             
+         
     
-class StartUPTracking(models.Model):
-    """StartUp Tracking model for assigning investors to startups they follow
-        
-        Fields:
-        - investor(ForeignKey): investor id
-        - startup(ForeignKey): startup id
-        - saved_at(models.DateTimeField): date and time when started following"""    
-    investor = models.ForeignKey(InvestorProfile, on_delete=models.CASCADE)
-    startup = models.ForeignKey(StartUpProfile, on_delete=models.CASCADE)
-    saved_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('startup', 'investor')
-
-
-class InvestorInitialMessage(models.Model):   
-    investor = models.ForeignKey(InvestorProfile, on_delete=models.CASCADE)
-    startup = models.ForeignKey(StartUpProfile, on_delete=models.CASCADE)
-    message = models.TextField()
-    sent_at = models.DateTimeField(auto_now_add=True)
+class Message(models.Model): 
+    pass
+    
