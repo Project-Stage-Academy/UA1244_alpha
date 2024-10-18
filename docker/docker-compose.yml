@@ -94,13 +94,14 @@ services:
     ports:
       - '27017:27017'
     volumes:
-      - data:/data/db
+      - data_mongo:/data/db
     networks:
       - backend-network
     restart: always
 
 volumes:
   data:
+  data_mongo:
 
 networks:
   backend-network:

@@ -13,7 +13,7 @@ if [[ "$DJANGO_ENV" = "PRODUCTION" ]]; then
   gunicorn -b 0.0.0.0:8000 \
     --log-level ${DJANGO_LOG_LEVEL,,} \
     --workers $(echo "$WEB_CONCURRENCY" | sed 's/[^0-9]//g') \
-    --access-logfile - Forum.wsgi:application
+    --access-logfile - forum.wsgi:application
 else
   # Initialize the admin (don't use it yet because the User model hasn't been created)
   # python manage.py initadmin

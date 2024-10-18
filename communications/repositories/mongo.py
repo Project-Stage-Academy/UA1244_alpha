@@ -26,7 +26,12 @@ class MongoDBRepository(AbstractRepository):
         data = self._collection.find_one({"room_id": room_id})
         if data:
             messages = [Message(**msg) for msg in data.get('messages', [])]
-            return ChatRoom(room_id=data['room_id'], participants=data['participants'], messages=messages)
+            return ChatRoom(
+                room_id=data['room_id'],
+                startup_id=data.get('startup_id'),
+                investor_id=data.get('investor_id'),
+                messages=messages
+            )
         return None
 
     def add_message(self, room_id: str, message: Message):
