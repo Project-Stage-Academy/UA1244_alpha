@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
 
-from Forum.settings import DEFAULT_FROM_EMAIL
+from Forum.settings import DEFAULT_FROM_EMAIL, SITE_URL
 from .models import Notification, NotificationType
 
 
@@ -36,9 +36,9 @@ def send_notification_email(self, notification_id):
     """
     notification = Notification.objects.get(id=notification_id)
     startup = notification.startup.user_id
-    startupt_url = reverse('startup-profile-by-id', args=[startup.id])
+    startupt_url = f'{SITE_URL}{reverse("startup-profile-by-id", args=[startup.id])}'
     investor = notification.investor.user
-    investor_url = reverse('investor-profile-by-id', args=[investor.id])
+    investor_url = f'{SITE_URL}{reverse("investor-profile-by-id", args=[investor.id])}'
 
     match notification.notification_type:
         case NotificationType.FOLLOW:
@@ -56,7 +56,7 @@ def send_notification_email(self, notification_id):
                 recipient, message, startupt_url, 'startup')
 
         case NotificationType.MESSAGE:
-            pass   
+            pass
 
     try:
         recipient_email = str(recipient)

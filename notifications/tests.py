@@ -1,7 +1,8 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
 from django.core import mail
 
+from Forum.settings import TEST_EMAIL_1, TEST_EMAIL_2
 from investors.models import InvestorProfile
 from startups.models import StartUpProfile
 from investment_tracking.models import InvestmentTracking
@@ -14,7 +15,6 @@ from .models import (
 
 User = get_user_model()
 
-
 class NotificationTest(TestCase):
     """Test suite for the notification model"""
 
@@ -22,10 +22,10 @@ class NotificationTest(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         user_st = User.objects.create(
-            email='user1@gmail.com', first_name='Startup', last_name='L', user_phone='+999999999')
+            email=TEST_EMAIL_1, first_name='Startup', last_name='L', user_phone='+999999999')
         user_st.add_role('Startup')
         user_inv = User.objects.create(
-            email='user2@gmail.com', first_name='Investor', last_name='L', user_phone='+999999999')
+            email=TEST_EMAIL_2, first_name='Investor', last_name='L', user_phone='+999999999')
         user_inv.add_role('Investor')
         cls.investor_ = InvestorProfile.objects.create(user=user_inv)
         cls.startup_ = StartUpProfile.objects.create(
@@ -33,6 +33,7 @@ class NotificationTest(TestCase):
 
     def test_investor_follow_notification(self):
         """test notification creation when investor starts following startup"""
+
         InvestmentTracking.objects.create(
             investor=self.investor_, startup=self.startup_)
         notification = Notification.objects.get(
@@ -44,6 +45,7 @@ class NotificationTest(TestCase):
 
     def test_investor_follow_email_notification(self):
         """test sending email notification when investor starts following startup"""
+
         InvestmentTracking.objects.create(
             investor=self.investor_, startup=self.startup_)
         notification = Notification.objects.get(
@@ -51,7 +53,23 @@ class NotificationTest(TestCase):
             startup=self.startup_
         )
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].to, str(notification.startup.user_id))
+        self.assertEqual(mail.outbox[0].to[0], str(notification.startup.user_id))
+        self.assertIn(notification.delivery_status,
+                      (NotificationDeliveryStatus.SENT,
+                       NotificationDeliveryStatus.FAILED))
+        if notification.delivery_status == NotificationDeliveryStatus.SENT:
+            self.assertIsNotNone(notification.sent_at)
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend')
+    def test_investor_follow_email_notification_real(self):
+        """test sending email notification when investor starts following startup with real email"""
+
+        InvestmentTracking.objects.create(
+            investor=self.investor_, startup=self.startup_)
+        notification = Notification.objects.get(
+            investor=self.investor_,
+            startup=self.startup_
+        )
         self.assertIn(notification.delivery_status,
                       (NotificationDeliveryStatus.SENT,
                        NotificationDeliveryStatus.FAILED))
