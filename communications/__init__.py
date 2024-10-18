@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from django.conf import settings
 from punq import Container
 from pymongo import MongoClient
@@ -5,6 +7,7 @@ from pymongo import MongoClient
 from communications.repositories.mongo import MongoDBRepository
 
 
+@lru_cache(1)
 def init_container() -> Container:
     container = Container()
 
