@@ -4,6 +4,7 @@ from uuid import uuid4
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 from simple_history.models import HistoricalRecords
 
@@ -27,7 +28,8 @@ class Project(models.Model):
     - duration(DurationField): project duration
     - created_at(DateTimeField)
     - updated_at(DateTimeField
-    - history: HistoricalRecords object for tracking updates"""
+    - history: HistoricalRecords object for tracking updates
+    """
     class ProjectStatus(models.IntegerChoices):
         """IntegerChoices ProjectStatus class
         
@@ -36,10 +38,10 @@ class Project(models.Model):
         - FINAL_CALL = 3: active, almost funded
         - CLOSED = 4: inactive"""
 
-        SEEKING = 1
-        IN_PROGRESS = 2
-        FINAL_CALL = 3
-        CLOSED = 4
+        SEEKING = 1, _('Seeking')
+        IN_PROGRESS = 2, _('In Progress')
+        FINAL_CALL = 3, _('Finall Call')
+        CLOSED = 4, _('Closed')
 
     project_id = models.UUIDField(
         primary_key=True, default=uuid4, editable=False)

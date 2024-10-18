@@ -1,3 +1,8 @@
 from django.shortcuts import render
+from rest_framework import generics, status
 
-# Create your views here.
+from .models import InvestorProfile
+
+
+class InvestorProfileViewById(generics.RetrieveAPIView):
+    pass
