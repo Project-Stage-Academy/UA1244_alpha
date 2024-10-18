@@ -1,16 +1,26 @@
-"""
-ASGI config for forum project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
-"""
-
 import os
-
 from django.core.asgi import get_asgi_application
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack
+from communications.routing import websocket_urlpatterns
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'forum.settings')
 
-application = get_asgi_application()
+"""
+ASGI application configuration.
+
+This application routes HTTP requests to Django's ASGI application and WebSocket requests
+to the appropriate consumer based on the defined URL patterns.
+
+Attributes:
+    application (ProtocolTypeRouter): The main ASGI application that handles routing.
+"""
+
+application = ProtocolTypeRouter({
+    "http": get_asgi_application(),
+    "websocket": AuthMiddlewareStack(
+        URLRouter(
+            websocket_urlpatterns
+        )
+    ),
+})
