@@ -2,9 +2,9 @@ import os
 
 from celery import Celery
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Forum.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'forum.settings')
 
-app = Celery('Forum')
+app = Celery('forum')
 
 app.config_from_object('django.conf:settings', namespace='CELERY')
 

@@ -38,7 +38,7 @@ services:
     build:
       context: ./..
       dockerfile: docker/python/Dockerfile
-    command: celery -A Forum.celery.app flower
+    command: celery -A forum.celery.app flower
     volumes:
       - ..:/code
     env_file:
@@ -58,7 +58,7 @@ services:
     build:
       context: ./..
       dockerfile: docker/python/Dockerfile
-    command: celery -A Forum.celery.app worker --loglevel=info
+    command: celery -A forum.celery.app worker --loglevel=info
     volumes:
       - ..:/code
     env_file:
@@ -75,6 +75,15 @@ services:
     image: redis:7.2.4-alpine
     ports:
       - "6379:6379"
+    networks:
+      - backend-network
+    restart: always
+
+  redis_channels:
+    image: redis:7.2.4-alpine
+    container_name: redis_channels
+    ports:
+      - "6380:6379"
     networks:
       - backend-network
     restart: always
