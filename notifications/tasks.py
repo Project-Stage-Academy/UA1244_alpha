@@ -1,15 +1,13 @@
-from celery import shared_task
 import logging
+from celery import shared_task
 
 from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Notification, NotificationType
-from investors.models import InvestorProfile
-from startups.models import StartUpProfile
 from Forum.settings import DEFAULT_FROM_EMAIL
+from .models import Notification, NotificationType
 
 
 User = get_user_model()
@@ -18,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 def create_notification(investor_id, startup_id, type_, message_id=None):
+    """Create notification instance"""
     try:
         Notification.objects.create(
             notification_type=type_,
@@ -27,9 +26,14 @@ def create_notification(investor_id, startup_id, type_, message_id=None):
         )
     except Exception as e:
         print(e)
-    
+
 @shared_task(bind=True, max_retries=3)
 def send_notification_email(self, notification_id):
+    """Send notification via email
+    
+    Parameters:
+    - notification_id
+    """
     notification = Notification.objects.get(id=notification_id)
     startup = notification.startup.user_id
     startupt_url = reverse('startup-profile-by-id', args=[startup.id])
@@ -52,7 +56,7 @@ def send_notification_email(self, notification_id):
                 recipient, message, startupt_url, 'startup')
 
         case NotificationType.MESSAGE:
-            pass            
+            pass   
 
     try:
         recipient_email = str(recipient)
@@ -63,7 +67,7 @@ def send_notification_email(self, notification_id):
         notification.save()
 
     except Exception as e:
-        logger.error(f'Error when sending notification email: {e}')
+        logger.error('Error when sending notification email: {e}')
         try:
             raise self.retry(exc=e, countdown=30)
         except self.MaxRetriesExceededError:
@@ -73,6 +77,14 @@ def send_notification_email(self, notification_id):
 
 
 def render_email_html_message(recipient, message, profile_url, profile_type):
+    """Render email html_message with custom
+    
+    Parameters:
+    - recipient
+    - message
+    - profile_url
+    - profile_type
+    """
     html_message = f'''
     <p>Hello, {recipient.get_full_name()}</p>
     <p>{message}</p>

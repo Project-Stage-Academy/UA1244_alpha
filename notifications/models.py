@@ -1,5 +1,3 @@
-from uuid import uuid4
-
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -8,16 +6,16 @@ from investors.models import InvestorProfile
 
 
 class NotificationType(models.IntegerChoices):
-        """Notification type class (IntegerChoices)
-        
-        - FOLLOW: 1
-        - MESSAGE: 2
-        - UPDATE: 3
-        """
-        FOLLOW = 1, _('Follow')
-        MESSAGE = 2, _('Message')
-        UPDATE = 3, _('Update')
+    """Notification type class (IntegerChoices)
     
+    - FOLLOW: 1
+    - MESSAGE: 2
+    - UPDATE: 3
+    """
+    FOLLOW = 1, _('Follow')
+    MESSAGE = 2, _('Message')
+    UPDATE = 3, _('Update')
+
 
 class NotificationStatus(models.IntegerChoices):
     """Notification status class (IntegerChoices)
@@ -68,12 +66,14 @@ class Notification(models.Model):
         type_ = NotificationType(self.notification_type).label
         return f'{type_}: {self.investor} -> {self.startup}' \
         + f' {self.sent_at if self.sent_at else ""}'
-    
+
     def set_read_status(self):
+        """Set notification status to READ"""
         self.status = NotificationStatus.READ
         self.save()
 
     def update_delivery_status(self, sent=True):
+        """Set notification delivery status to SENT or FAILED"""
         status = (NotificationDeliveryStatus.FAILED,
                   NotificationDeliveryStatus.SENT)[sent]
         self.delivery_status = status

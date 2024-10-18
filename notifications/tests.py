@@ -2,14 +2,12 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.core import mail
 
-import investment_tracking
 from investors.models import InvestorProfile
 from startups.models import StartUpProfile
 from investment_tracking.models import InvestmentTracking
 from .models import (
     Notification,
     NotificationType,
-    NotificationStatus,
     NotificationDeliveryStatus,
 )
 
@@ -23,7 +21,6 @@ class NotificationTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-
         user_st = User.objects.create(
             email='user1@gmail.com', first_name='Startup', last_name='L', user_phone='+999999999')
         user_st.add_role('Startup')
@@ -35,6 +32,7 @@ class NotificationTest(TestCase):
             user_id=user_st, name='Startup Company', description='')
 
     def test_investor_follow_notification(self):
+        """test notification creation when investor starts following startup"""
         InvestmentTracking.objects.create(
             investor=self.investor_, startup=self.startup_)
         notification = Notification.objects.get(
@@ -45,6 +43,7 @@ class NotificationTest(TestCase):
         self.assertEqual(notification.notification_type, NotificationType.FOLLOW)
 
     def test_investor_follow_email_notification(self):
+        """test sending email notification when investor starts following startup"""
         InvestmentTracking.objects.create(
             investor=self.investor_, startup=self.startup_)
         notification = Notification.objects.get(
@@ -53,7 +52,7 @@ class NotificationTest(TestCase):
         )
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, str(notification.startup.user_id))
-        self.assertIn(notification.delivery_status, 
+        self.assertIn(notification.delivery_status,
                       (NotificationDeliveryStatus.SENT,
                        NotificationDeliveryStatus.FAILED))
         if notification.delivery_status == NotificationDeliveryStatus.SENT:
