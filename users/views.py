@@ -1,4 +1,7 @@
+from djoser.views import UserViewSet
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
@@ -6,7 +9,6 @@ from rest_framework import status
 from .models import User
 from .serializers import UserSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
@@ -61,4 +63,12 @@ class UserProfileView(APIView):
         user = request.user
         serializer = UserSerializer(user)
         return Response(serializer.data)
+
+
+class CustomUserViewSet(UserViewSet):
+    @action(["post"], detail=False, throttle_classes=[UserRateThrottle])
+    def reset_password(self, request, *args, **kwargs):
+        return super().reset_password(request, *args, **kwargs)
+
+
 

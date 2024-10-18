@@ -2,6 +2,8 @@
 
 from django.db import migrations, models
 
+from common.validators.image_validator import ImageValidator
+
 
 class Migration(migrations.Migration):
 
@@ -13,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='investorprofile',
             name='investor_logo',
-            field=models.ImageField(blank=True, null=True, upload_to='investor_logos/', validators=[common.validators.image_validator.ImageValidator(max_height=800, max_size=5242880, max_width=1200)]),
+            field=models.ImageField(blank=True, null=True, upload_to='investor_logos/', validators=[ImageValidator(max_height=800, max_size=5242880, max_width=1200)]),
         ),
     ]
