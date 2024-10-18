@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'users',
     'startups',
     'investors',
@@ -52,9 +53,12 @@ INSTALLED_APPS = [
     'communications',
     'dashboard',
     'common',
+
     'djoser',
     'rest_framework',
     'rest_framework_simplejwt',
+    'django_filters',
+    'simple_history',
     'channels',
 ]
 
@@ -229,6 +233,7 @@ DJOSER = {
     'SET_PASSWORD_RETYPE': True,
     'ACTIVATION_URL': 'activate/{uid}/{token}',
     'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/{uid}/{token}',
+    'USERNAME_RESET_CONFIRM_URL': 'email/reset/confirm/{uid}/{token}',
     'SEND_ACTIVATION_EMAIL': False,
     'SERIALIZERS': {
         'user_create': 'users.serializers.CustomUserCreateSerializer',
@@ -240,6 +245,7 @@ DJOSER = {
         'user_delete': 'djoser.serializers.UserDeleteSerializer',
     },
 }
+
 
 AUTH_USER_MODEL = 'users.User'
 

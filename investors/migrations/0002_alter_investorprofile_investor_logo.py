@@ -3,6 +3,8 @@
 from django.db import migrations, models
 import common
 
+import common
+
 
 class Migration(migrations.Migration):
 
