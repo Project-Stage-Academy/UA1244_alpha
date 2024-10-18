@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     def handle(self, *args, **options):
         admin_email = os.getenv("ADMIN_EMAIL", "admin@example.com")
-        admin_password = os.getenv("ADMIN_PASSWORD", "admin")
+        admin_password = os.getenv("ADMIN_PASSWORD", "admin)!*#U")
         admin_first_name = os.getenv("ADMIN_FIRST_NAME", "admin")
         admin_last_name = os.getenv("ADMIN_LAST_NAME", "admin")
 

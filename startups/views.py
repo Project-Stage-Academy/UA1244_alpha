@@ -1,8 +1,8 @@
 from django.http import Http404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, filters
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -40,12 +40,23 @@ class StartUpProfileCreate(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        return get_success_response(
-            message='Startup profile created successfully',
-            data=response.data,
-            status=status.HTTP_201_CREATED
-        )
+        try:
+            response = super().create(request, *args, **kwargs)
+            return get_success_response(
+                message='Startup profile created successfully',
+                data=response.data,
+                status=status.HTTP_201_CREATED
+            )
+        except ValidationError as e:
+            return Response(
+                {"error": "Invalid data", "details": e.detail},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except PermissionDenied as e:
+            return Response(
+                {"error": "Permission denied", "details": str(e)},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
 
 class StartUpProfileUpdate(generics.UpdateAPIView):

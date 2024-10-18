@@ -25,9 +25,6 @@ class StartUpFilterSearchTests(APITestCase):
 
         self.client = APIClient()
 
-        self.authenticate_user()
-
-    def authenticate_user(self):
         url = reverse('jwt-create')
         response = self.client.post(url, {
             'email': 'john@gmail.com',
@@ -39,27 +36,58 @@ class StartUpFilterSearchTests(APITestCase):
 
     def test_filter_by_name(self):
         url = reverse('startup-list')
-        response = self.client.get(url, {'name': 'Tech Solutions'})
+        response = self.client.get(url, {'name': 'tech solutions'})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['name'], 'Tech Solutions')
 
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['name'], 'Tech Solutions')
+        self.assertIn('count', response.data)
+        self.assertEqual(response.data['count'], 1)
+        self.assertIsNone(response.data['next'])
+        self.assertIsNone(response.data['previous'])
 
     def test_search_by_description(self):
         url = reverse('startup-list')
         response = self.client.get(url, {'search': 'energy'})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['description'], 'Sustainable energy startup')
 
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['description'], 'Sustainable energy startup')
+        self.assertIn('count', response.data)
+        self.assertEqual(response.data['count'], 1)
+        self.assertIsNone(response.data['next'])
+        self.assertIsNone(response.data['previous'])
 
     def test_search_by_partial_name(self):
         url = reverse('startup-list')
         response = self.client.get(url, {'search': 'Food'})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['name'], 'Foodie')
 
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['name'], 'Foodie')
+        self.assertIn('count', response.data)
+        self.assertEqual(response.data['count'], 1)
+        self.assertIsNone(response.data['next'])
+        self.assertIsNone(response.data['previous'])
+
+    def test_filter_with_no_matching_results(self):
+        url = reverse('startup-list')
+        response = self.client.get(url, {'name': 'Something'})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 0)
+
+        self.assertIn('count', response.data)
+        self.assertEqual(response.data['count'], 0)
+        self.assertIsNone(response.data['next'])
+        self.assertIsNone(response.data['previous'])
+
+    def test_invalid_search_query_handling(self):
+        url = reverse('startup-list')
+        response = self.client.get(url, {'search': 'fdghgfdhgfdhfgdhdfgh'})
+
+        self.assertEqual(len(response.data['results']), 0)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)

@@ -17,3 +17,8 @@ class StartUpProfileFilter(django_filters.FilterSet):
         model = StartUpProfile
         fields = ['name', 'description', 'created_at']
 
+    def filter_created_at(self, queryset, name, value):
+        try:
+            return queryset.filter(created_at__range=value)
+        except (ValueError, TypeError):
+            raise django_filters.exceptions.ValidationError("Invalid date range format.")
