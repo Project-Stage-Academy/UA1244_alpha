@@ -68,6 +68,14 @@ class UserProfileView(APIView):
 class CustomUserViewSet(UserViewSet):
     @action(["post"], detail=False, throttle_classes=[UserRateThrottle])
     def reset_password(self, request, *args, **kwargs):
+        """
+        Handles password reset requests.
+
+        This method utilizes Djoser's built-in reset_password functionality
+        to send a password reset email to the user. Rate limiting is applied
+        to prevent brute force attacks on the password reset endpoint.
+
+        """
         return super().reset_password(request, *args, **kwargs)
 
 
