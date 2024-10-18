@@ -5,4 +5,4 @@ class InvestmentTrackingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InvestmentTracking
-        fields = ['investor', 'startup']
+        fields = '__all__'
