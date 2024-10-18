@@ -4,7 +4,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from .models import InvestmentTracking
 from startups.models import StartUpProfile
-from django.http import Http404
 from django.db.utils import IntegrityError
 from rest_framework.views import APIView
 from investors.models import InvestorProfile
