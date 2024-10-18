@@ -9,6 +9,7 @@ from django.utils import timezone
 from .models import Notification, NotificationType
 from investors.models import InvestorProfile
 from startups.models import StartUpProfile
+from Forum.settings import DEFAULT_FROM_EMAIL
 
 
 User = get_user_model()
@@ -17,21 +18,23 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 def create_notification(investor_id, startup_id, type_, message_id=None):
-    investor = InvestorProfile.objects.get(investor_id=investor_id)
-    startup = StartUpProfile.objects.get(startup_id=startup_id)
-    Notification.objects.create(
-        notification_type=type_,
-        investor=investor,
-        startup=startup,
-        message_id=message_id
-    )
+    try:
+        Notification.objects.create(
+            notification_type=type_,
+            investor_id=investor_id,
+            startup_id=startup_id,
+            message_id=message_id
+        )
+    except Exception as e:
+        print(e)
     
 @shared_task(bind=True, max_retries=3)
-def send_notification_email(self, notification:Notification):
+def send_notification_email(self, notification_id):
+    notification = Notification.objects.get(id=notification_id)
     startup = notification.startup.user_id
-    startupt_url = reverse('profile-by-id', args=[startup.startup_id])
+    startupt_url = reverse('startup-profile-by-id', args=[startup.id])
     investor = notification.investor.user
-    investor_url = reverse('investor-profile-by-id', args=[investor.investor_id])
+    investor_url = reverse('investor-profile-by-id', args=[investor.id])
 
     match notification.notification_type:
         case NotificationType.FOLLOW:
@@ -52,8 +55,10 @@ def send_notification_email(self, notification:Notification):
             pass            
 
     try:
-        send_mail(subject=subject, message=message, 
-                  recipient_list=[recipient], html_message=html_message)
+        recipient_email = str(recipient)
+        send_mail(subject=subject, message=message, from_email=DEFAULT_FROM_EMAIL,
+                  recipient_list=[recipient_email], html_message=html_message,
+                  fail_silently=False)
         notification.sent_at = timezone.now()
         notification.save()
 

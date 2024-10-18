@@ -65,7 +65,8 @@ class Notification(models.Model):
     read_at = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
-        return f'{self.notification_type}: {self.investor} -> {self.startup}' \
+        type_ = NotificationType(self.notification_type).label
+        return f'{type_}: {self.investor} -> {self.startup}' \
         + f' {self.sent_at if self.sent_at else ""}'
     
     def set_read_status(self):

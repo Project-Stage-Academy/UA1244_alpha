@@ -14,8 +14,8 @@ def create_notification_on_investor_follow(sender, instance, created, **kwargs):
     """Create a notification when an investor starts following a startup"""
     if created:
         create_notification.delay(
-            investor_id=instance.investor.investor_id, 
-            startup_id=instance.startup.startup_id,
+            investor_id=instance.investor.id, 
+            startup_id=instance.startup.id,
             type_=NotificationType.FOLLOW
         )
 
@@ -23,4 +23,4 @@ def create_notification_on_investor_follow(sender, instance, created, **kwargs):
 def send_notification(sender, instance, created, **kwargs):
     """Send an email when new notification created"""
     if created:
-        send_notification_email.delay(notification=instance)
+        send_notification_email.delay(notification_id=instance.id)
