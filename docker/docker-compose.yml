@@ -27,6 +27,7 @@ services:
     depends_on:
       - db
       - redis
+      - mongodb
     ports:
       - "8000:8000"
     networks:
@@ -79,8 +80,29 @@ services:
       - backend-network
     restart: always
 
+  redis_channels:
+    image: redis:7.2.4-alpine
+    container_name: redis_channels
+    ports:
+      - "6380:6379"
+    networks:
+      - backend-network
+    restart: always
+
+  mongodb:
+    image: mongo:6-jammy
+    container_name: mongodb
+    ports:
+      - '27017:27017'
+    volumes:
+      - data_mongo:/data/db
+    networks:
+      - backend-network
+    restart: always
+
 volumes:
   data:
+  data_mongo:
 
 networks:
   backend-network:
