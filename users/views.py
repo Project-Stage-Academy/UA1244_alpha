@@ -87,14 +87,17 @@ class LogoutView(APIView):
                 ac = AccessToken(access_token)
 
                 ac.set_exp(lifetime=timedelta(seconds=0))
+                # ac.delete()
                 # cache_key = f"user_{request.user.id}_token"
                 # cache.delete(cache_key)
-                expiration_time = datetime.fromtimestamp(ac["exp"])
-                print(expiration_time)
+                # expiration_time = datetime.fromtimestamp(ac["exp"])
+                # print(expiration_time)
                 # return Response({"message": "The user logout successful"}, status=status.HTTP_200_OK)
                 response = Response({"message": "User logged out successfully"}, status=status.HTTP_200_OK)
-                response.delete_cookie('access')
-                response.delete_cookie('refresh')
+                # response.delete_cookie('access')
+                # response.delete_cookie('refresh')
+                response.delete_cookie('access_token')
+                response.delete_cookie('refresh_token')
                 return response
             except TokenError:
                 return Response({"error": "Invalid access token"}, status=status.HTTP_400_BAD_REQUEST)  
