@@ -9,7 +9,7 @@ class InvestmentTracking(models.Model):
 
     Attributes:
         investor (ForeignKey): The investor associated with the investment.
-        startup_id (ForeignKey): The startup associated with the investment.
+        startup (ForeignKey): The startup associated with the investment.
         saved_at (DateTimeField): The timestamp when the investment was recorded.
 
     Methods:
