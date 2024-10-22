@@ -96,6 +96,10 @@ ASGI_APPLICATION = 'forum.asgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017')
+MONGO_DB_NAME = os.getenv('MONGO_DB_NAME', 'db_name')
+MONGO_COLLECTION_NAME = os.getenv('MONGO_COLLECTION_NAME', 'collection_name')
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',

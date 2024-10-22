@@ -7,6 +7,8 @@ import common
 
 from common.validators.image_validator import ImageValidator
 
+import common
+
 
 class Migration(migrations.Migration):
 
