@@ -1,5 +1,7 @@
-import logging
+from djoser.views import UserViewSet
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
@@ -89,3 +91,19 @@ class UserProfileView(APIView):
                 }
             )
             raise
+
+class CustomUserViewSet(UserViewSet):
+    @action(["post"], detail=False, throttle_classes=[UserRateThrottle])
+    def reset_password(self, request, *args, **kwargs):
+        """
+        Handles password reset requests.
+
+        This method utilizes Djoser's built-in reset_password functionality
+        to send a password reset email to the user. Rate limiting is applied
+        to prevent brute force attacks on the password reset endpoint.
+
+        """
+        return super().reset_password(request, *args, **kwargs)
+
+
+
