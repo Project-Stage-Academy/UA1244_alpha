@@ -7,4 +7,4 @@ class StartUpProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StartUpProfile
-        fields = ['name', 'description', 'startup_logo', 'website']
+        fields = '__all__'

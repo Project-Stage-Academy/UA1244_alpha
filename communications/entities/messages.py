@@ -12,6 +12,10 @@ class Message(BaseEntity):
     content: str
     read_at: Optional[datetime] = None
 
+    def mark_as_read(self):
+        """Mark the message as read by setting the read_at timestamp."""
+        self.read_at = datetime.now()
+
 
 @dataclass
 class ChatRoom(BaseEntity):
@@ -19,3 +23,11 @@ class ChatRoom(BaseEntity):
     startup_id: int
     investor_id: int
     messages: List[Message] = field(default_factory=list)
+
+    def add_message(self, message: Message):
+        """Add a new message to the room."""
+        self.messages.append(message)
+
+    def get_unread_messages(self) -> List[Message]:
+        """Return a list of unread messages in the room."""
+        return [message for message in self.messages if message.read_at is None]
