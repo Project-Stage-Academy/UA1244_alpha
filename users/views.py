@@ -1,3 +1,4 @@
+import logging
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -7,58 +8,84 @@ from .models import User
 from .serializers import UserSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+logger = logging.getLogger(__name__)
+
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
     Obtains a token pair for a user.
-
-    :param request: The incoming request.
-    :param args: Additional arguments.
-    :param kwargs: Additional keyword arguments.
-    :return: A response containing the token pair.
     """
     serializer_class = TokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
         """
-        Handles the POST request.
-
-        :param request: The incoming request.
-        :param args: Additional arguments.
-        :param kwargs: Additional keyword arguments.
-        :return: A response containing the token pair.
+        Handles the POST request for token generation.
         """
+        logger.debug(f"Token obtain attempt for user with email: {request.data.get('email')}")
+
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+            tokens = serializer.validated_data
+            user = User.objects.get(email=request.data['email'])
 
-        tokens = serializer.validated_data
-        user = User.objects.get(email=request.data['email'])
+            logger.info(
+                "Successfully generated token pair",
+                extra={
+                    'user_id': user.id,
+                    'email': user.email,
+                }
+            )
 
-        return Response({
-            'refresh': str(tokens['refresh']),
-            'access': str(tokens['access']),
-            'user_id': user.id,
-            'email': user.email,
-        }, status=status.HTTP_200_OK)
+            return Response({
+                'refresh': str(tokens['refresh']),
+                'access': str(tokens['access']),
+                'user_id': user.id,
+                'email': user.email,
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(
+                "Failed to generate token pair",
+                extra={
+                    'email': request.data.get('email'),
+                    'error': str(e)
+                }
+            )
+            raise
 
 
 class UserProfileView(APIView):
     """
     Retrieves the user's profile information.
-
-    :param request: The incoming request.
-    :return: A response containing the user's profile information.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         """
-        Handles the GET request.
-
-        :param request: The incoming request.
-        :return: A response containing the user's profile information.
+        Handles the GET request for user profile.
         """
         user = request.user
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
+        logger.debug(f"Profile request for user: {user.email}")
 
+        try:
+            serializer = UserSerializer(user)
+            logger.info(
+                "Successfully retrieved user profile",
+                extra={
+                    'user_id': user.id,
+                    'email': user.email
+                }
+            )
+            return Response(serializer.data)
+
+        except Exception as e:
+            logger.error(
+                "Failed to retrieve user profile",
+                extra={
+                    'user_id': user.id,
+                    'email': user.email,
+                    'error': str(e)
+                }
+            )
+            raise

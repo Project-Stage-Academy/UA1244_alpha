@@ -176,8 +176,9 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        'detailed': {
+            'format': '%(levelname)s %(asctime)s: %(message)s (Line: %(lineno)d) [%(filename)s]',
+            'datefmt': '%d/%m/%Y %I:%M:%S',
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
@@ -189,19 +190,32 @@ LOGGING = {
             'formatter': 'simple'
         },
         'file': {
-            'class': 'logging.FileHandler',
-            'filename': 'logs/debug.log',
-            'formatter': 'verbose'
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs/debug.log'),
+            'when': 'midnight',
+            'backupCount': 7,
+            'formatter': 'detailed'
         },
     },
     'loggers': {
         'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'django.db.backends': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'users': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': True,
         },
     },
 }
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
