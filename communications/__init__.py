@@ -1,18 +1,20 @@
 from functools import lru_cache
-
 from django.conf import settings
 from punq import Container
 from pymongo import MongoClient
 
 from communications.repositories.mongo import MongoDBRepository
+from communications.services.messages import CreateChatCommand, SendMessageCommand
 
 
 @lru_cache(1)
 def init_container() -> Container:
     container = Container()
 
+
     def init_mongo_client() -> MongoClient:
         return MongoClient(settings.MONGO_URI)
+
 
     def init_mongo_repository() -> MongoDBRepository:
         return MongoDBRepository(
@@ -21,7 +23,18 @@ def init_container() -> Container:
             mongo_db_collection_name=settings.MONGO_COLLECTION_NAME
         )
 
+
+    def init_create_chat_command(repo: MongoDBRepository) -> CreateChatCommand:
+        return CreateChatCommand(mongo_repo=repo)
+
+
+    def init_send_message_command(repo: MongoDBRepository) -> SendMessageCommand:
+        return SendMessageCommand(mongo_repo=repo)
+
+
     container.register(MongoClient, factory=init_mongo_client)
     container.register(MongoDBRepository, factory=init_mongo_repository)
+    container.register(CreateChatCommand, factory=lambda: init_create_chat_command(container.resolve(MongoDBRepository)))
+    container.register(SendMessageCommand, factory=lambda: init_send_message_command(container.resolve(MongoDBRepository)))
 
     return container

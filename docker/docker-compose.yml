@@ -34,6 +34,25 @@ services:
       - backend-network
     restart: always
 
+  communications:
+    container_name: communications
+    build:
+      context: ./..
+      dockerfile: docker/python/Dockerfile
+    volumes:
+      - ..:/code
+    env_file:
+      - ../.env
+    command: daphne -p 8001 -b 0.0.0.0 forum.asgi:application
+
+    depends_on:
+      - forum_app
+    ports:
+      - "8001:8001"
+    networks:
+      - backend-network
+    restart: always
+
   flower:
     hostname: flower
     build:
