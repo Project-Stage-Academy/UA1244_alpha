@@ -9,6 +9,8 @@ from rest_framework import status
 from .models import User
 from .serializers import UserSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from datetime import timedelta
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
@@ -35,7 +37,6 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
         tokens = serializer.validated_data
         user = User.objects.get(email=request.data['email'])
-
         return Response({
             'refresh': str(tokens['refresh']),
             'access': str(tokens['access']),
@@ -77,6 +78,23 @@ class CustomUserViewSet(UserViewSet):
 
         """
         return super().reset_password(request, *args, **kwargs)
+      
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
 
-
+    """
+    Class for successfull user log out
+    """
+    def post(self, request):
+        refresh_token = request.data["refresh"]
+        if refresh_token:
+            token = RefreshToken(refresh_token)
+            token.set_exp(lifetime=timedelta(seconds=0))
+        else:
+            return Response({"error": "The refresh token hadn't been provided"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        access_token = request.auth.token
+        ac_token = AccessToken(access_token)
+        ac_token.set_exp(lifetime=timedelta(seconds=0))
+        return Response({"message": "User logged out successfully"}, status=status.HTTP_200_OK)
 
