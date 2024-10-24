@@ -1,4 +1,5 @@
 from django.http import Http404
+from django.core.exceptions import ValidationError
 from rest_framework import generics, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import PageNumberPagination
@@ -70,7 +71,7 @@ class StartUpProfileUpdate(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return StartUpProfile.objects.filter(user_id=self.request.user)
+        return StartUpProfile.objects.filter(user_id=self.request.user.id)
 
     def update(self, request, *args, **kwargs):
         try:
@@ -97,7 +98,7 @@ class StartUpProfileViewById(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return StartUpProfile.objects.filter(pk=self.kwargs['pk'])
+        return StartUpProfile.objects.filter(id=self.kwargs.get('pk'))
 
     def retrieve(self, request, *args, **kwargs):
         try:

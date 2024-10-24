@@ -62,6 +62,8 @@ INSTALLED_APPS = [
     'django_filters',
     'simple_history',
     'channels',
+    'drf_yasg',
+
 ]
 
 MIDDLEWARE = [

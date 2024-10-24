@@ -1,0 +1,98 @@
+[
+    {
+        "model": "users.Role",
+        "pk": 1,
+        "fields": {
+            "name": "Startup"
+        }
+    },
+    {
+        "model": "users.Role",
+        "pk": 2,
+        "fields": {
+            "name": "Investor"
+        }
+    },
+    {
+        "model": "users.User",
+        "pk": 1,
+        "fields": {
+            "email": "user1@gmail.com",
+            "first_name": "First1",
+            "last_name": "Last1",
+            "user_phone": "+999999999",
+            "roles": [1],
+            "created_at": "2024-10-23 15:45:32.123456+00:00",
+            "updated_at": "2024-10-23 15:45:32.123456+00:00"
+        }
+    },
+    {
+        "model": "users.User",
+        "pk": 2,
+        "fields": {
+            "email": "user2@gmail.com",
+            "first_name": "First2",
+            "last_name": "Last2",
+            "user_phone": "+999999999",
+            "roles": [2],
+            "created_at": "2024-10-23 15:45:32.123456+00:00",
+            "updated_at": "2024-10-23 15:45:32.123456+00:00"
+        }
+    },
+    {
+        "model": "startups.StartUpProfile",
+        "pk": 1,
+        "fields": {
+            "user_id": 1,
+            "name": "Startup Company Name",
+            "description": "Banana Smoothie",            
+            "created_at": "2024-10-23 15:45:32.123456+00:00",
+            "updated_at": "2024-10-23 15:45:32.123456+00:00"
+        }
+    },
+    {
+        "model": "investors.InvestorProfile",
+        "pk": 1,
+        "fields": {
+            "user": 2,
+            "created_at": "2024-10-23 15:45:32.123456+00:00",
+            "updated_at": "2024-10-23 15:45:32.123456+00:00"
+        }
+    },
+    {
+        "model": "projects.Project",
+        "pk": 1,
+        "fields": {
+            "startup": 1,
+            "title": "Banana chocolate!",
+            "risk": 0.5,
+            "description": "...",
+            "amount": 10000,
+            "status": 1,
+            "created_at": "2024-10-23 15:45:32.123456+00:00",
+            "updated_at": "2024-10-23 15:45:32.123456+00:00"
+        }
+    },
+    {
+        "model": "projects.Subscription",
+        "pk": 1,
+        "fields": {
+            "investor": 1,
+            "project": 1,
+            "contract_url": "http://contract.com",
+            "share": 0.3,
+            "created_at": "2024-10-23 15:45:32.123456+00:00"
+        }
+    },
+    {
+        "model": "notifications.Notification",
+        "pk": 1,
+        "fields": {
+            "notification_type": 1,
+            "status": 0,
+            "investor": 1,
+            "startup": 1,
+            "created_at": "2024-10-23 15:45:32.123456+00:00"
+        }
+    }
+]
