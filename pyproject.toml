@@ -18,8 +18,12 @@ gunicorn = "^23.0.0"
 celery = "^5.4.0"
 redis = "^5.1.1"
 flower = "^2.0.1"
+django-filter = "^24.3"
+django-simple-history = "^3.7.0"
 channels = "^4.1.0"
 daphne = "^4.1.2"
+pymongo = "^4.10.1"
+punq = "^0.7.0"
 
 
 [tool.poetry.group.dev.dependencies]

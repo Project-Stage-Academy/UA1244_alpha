@@ -1,4 +1,7 @@
+from djoser.views import UserViewSet
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
@@ -8,7 +11,6 @@ from .serializers import UserSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from datetime import timedelta
-
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
@@ -64,13 +66,25 @@ class UserProfileView(APIView):
         return Response(serializer.data)
 
 
+class CustomUserViewSet(UserViewSet):
+    @action(["post"], detail=False, throttle_classes=[UserRateThrottle])
+    def reset_password(self, request, *args, **kwargs):
+        """
+        Handles password reset requests.
+
+        This method utilizes Djoser's built-in reset_password functionality
+        to send a password reset email to the user. Rate limiting is applied
+        to prevent brute force attacks on the password reset endpoint.
+
+        """
+        return super().reset_password(request, *args, **kwargs)
+      
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     """
-    View for successfull user log out
+    Class for successfull user log out
     """
-
     def post(self, request):
         refresh_token = request.data["refresh"]
         if refresh_token:
@@ -83,3 +97,4 @@ class LogoutView(APIView):
         ac_token = AccessToken(access_token)
         ac_token.set_exp(lifetime=timedelta(seconds=0))
         return Response({"message": "User logged out successfully"}, status=status.HTTP_200_OK)
+
