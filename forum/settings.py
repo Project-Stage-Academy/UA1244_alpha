@@ -12,8 +12,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 from datetime import timedelta
-
 from dotenv import load_dotenv
+from .utils.logging_utils import JsonFormatter
 
 load_dotenv()
 
@@ -187,15 +187,14 @@ else:
         },
     }
 
-LOGGING_CONFIG = None
+# LOGGING_CONFIG = None
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'detailed': {
-            'format': '%(levelname)s %(asctime)s: %(message)s (Line: %(lineno)d) [%(filename)s]',
-            'datefmt': '%d/%m/%Y %I:%M:%S',
+        'json': {
+            '()': JsonFormatter,
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
@@ -211,19 +210,14 @@ LOGGING = {
             'filename': os.path.join(BASE_DIR, 'logs/debug.log'),
             'when': 'midnight',
             'backupCount': 7,
-            'formatter': 'detailed'
+            'formatter': 'json'
         },
     },
     'loggers': {
         'django': {
             'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'django.db.backends': {
-            'handlers': ['file'],
             'level': 'DEBUG',
-            'propagate': False,
+            'propagate': True,
         },
         'users': {
             'handlers': ['console', 'file'],

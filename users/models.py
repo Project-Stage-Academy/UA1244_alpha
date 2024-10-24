@@ -16,7 +16,7 @@ from django.utils import timezone
 
 from common.validators.image_validator import ImageValidator
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('users')
 
 class CustomUserManager(BaseUserManager):
     """Custom user manager for the User model."""

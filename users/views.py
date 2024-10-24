@@ -1,3 +1,4 @@
+import logging
 from djoser.views import UserViewSet
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -10,7 +11,7 @@ from .models import User
 from .serializers import UserSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('users')
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):

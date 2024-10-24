@@ -4,7 +4,7 @@ from rest_framework import serializers
 from .models import Role, User
 from django.db import transaction
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('users')
 
 User = get_user_model()
 
@@ -25,6 +25,7 @@ class CustomUserCreateSerializer(serializers.ModelSerializer):
     profile_picture = serializers.ImageField(
         required=False, allow_null=True
     )
+
 
     class Meta:
         model = User
