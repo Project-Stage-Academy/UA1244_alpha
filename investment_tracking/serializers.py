@@ -2,7 +2,6 @@ from rest_framework import serializers
 from .models import InvestmentTracking
 
 
-
 class InvestmentTrackingSerializerCreate(serializers.ModelSerializer):
 
     class Meta:
@@ -10,8 +9,9 @@ class InvestmentTrackingSerializerCreate(serializers.ModelSerializer):
         fields = ['investor', 'startup']
 
 
-class InvestmentTrackingSerializerGet(serializers.ModelSerializer):
+class ListInvestmentTrackingSerializer(serializers.ModelSerializer):
+    startup_name = serializers.CharField(source='startup.name', read_only=True)
 
     class Meta:
         model = InvestmentTracking
-        fields = '__all__'
+        fields = ['startup', 'startup_name', 'saved_at']

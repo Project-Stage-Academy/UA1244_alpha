@@ -16,9 +16,9 @@ class InvestmentTracking(models.Model):
         __str__(): Returns a string representation of the investment tracking entry.
     """
      
-    investor = models.ForeignKey(InvestorProfile, on_delete = models.CASCADE)
-    startup = models.ForeignKey(StartUpProfile, on_delete = models.CASCADE)
-    saved_at = models.DateTimeField(auto_now_add = True)
+    investor = models.ForeignKey(InvestorProfile, on_delete=models.CASCADE)
+    startup = models.ForeignKey(StartUpProfile, on_delete=models.CASCADE)
+    saved_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = 'Investment Tracking'
@@ -27,9 +27,9 @@ class InvestmentTracking(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["investor", "startup"],
-                name = "unique_investor_startup"
+                name="unique_investor_startup"
             )
         ]
 
     def __str__(self):
-        return f"Investor: {self.investor.__str__}, StartUp: {self.startup.__str__()}, saved at:{self.saved_at}"
+        return f"Investor: {self.investor.__str__()}, StartUp: {self.startup.__str__()}, saved at:{self.saved_at}"
