@@ -5,8 +5,11 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
 from .models import Notification, NotificationStatus
-from .serializers import NotificationSerializer
+from .serializers import NotificationSerializer, ExtendedNotificationSerializer
 from .filters import NotificationFilter
 
 
@@ -32,16 +35,65 @@ class NotificationListView(generics.ListAPIView):
     filterset_class = NotificationFilter
     ordering_fields = ['sent_at', 'read_at']
     ordering = ['sent_at']
+    
+    @swagger_auto_schema(
+        operation_description='Notifications list with filters',
+        responses={
+            status.HTTP_200_OK: NotificationSerializer,
+            status.HTTP_400_BAD_REQUEST: openapi.Response('Bad Request'),
+            status.HTTP_401_UNAUTHORIZED: openapi.Response('Unauthorized'),
+            status.HTTP_404_NOT_FOUND: openapi.Response('Not Found')
+        },
+        manual_parameters=[
+            openapi.Parameter(
+                'notification_type', openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
+                description='1 - Follow, 2 - Message, 3 - Update', enum=[1, 2, 3]
+            ),
+            openapi.Parameter(
+                'status', openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
+                description='0 - Unread, 1 - Read', enum=[0, 1]
+            ),
+            openapi.Parameter(
+                'delivery_status', openapi.IN_QUERY, type=openapi.TYPE_INTEGER,
+                description='0 - Failed, 1 - Sent', enum=[0, 1]
+            ),
+            openapi.Parameter(
+                'ordering', openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description='by sent_at, -sent_at, read_at, -read_at',
+                enum=['sent_at', '-sent_at', 'read_at', '-read_at']
+            ),
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 
-class NotificiationByIDView(generics.RetrieveUpdateDestroyAPIView):
-    """API view to GET, UPDADE, DELETE notification by id"""
+class NotificiationByIDView(generics.RetrieveDestroyAPIView):
+    """API view to GET, PATCH, DELETE notification by id"""
     queryset = Notification.objects.all()
-    serializer_class = NotificationSerializer
+    serializer_class = ExtendedNotificationSerializer
     permission_classes = [IsAuthenticated]
     lookup_field = 'pk'
 
-    def update(self, request, *args, **kwargs):
+    @swagger_auto_schema(
+        operation_description='Patch Notification status field',
+        responses={
+            status.HTTP_200_OK: ExtendedNotificationSerializer,
+            status.HTTP_400_BAD_REQUEST: 'Bad Request - Invalid Status',
+            status.HTTP_404_NOT_FOUND: 'Not Found - No Notification matches the given query'
+        },
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'status': openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description='0 - Unread, 1 - Read',
+                    enum=[0, 1]
+                )
+            }
+        ),
+    )
+    def patch(self, request, *args, **kwargs):
         notification = self.get_object()
         if 'status' in request.data:
             update_status = int(request.data['status'])
@@ -58,26 +110,32 @@ class NotificiationByIDView(generics.RetrieveUpdateDestroyAPIView):
             notification.save()
 
             serializer = self.get_serializer(notification)
-            data = {
-                'message': 'Notification updated successfully',
-                'notification': serializer.data,
-                'associated_profile_url': notification.get_associated_profile_url()
-            }
-            response = Response(data, status=status.HTTP_200_OK)
+            response = Response(serializer.data, status=status.HTTP_200_OK)
 
         else:
             response = Response(
-                {'detail': 'No valid fields to update'},
+                {'detail': 'Bad Request'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         return response
 
-    def get(self, *args, **kwargs):
-        notification = self.get_object()
-        serializer = self.get_serializer(notification)
-        data = {
-            "message": "Notification updated successfully",
-            "notification": serializer.data,
-            "associated_profile_url": notification.get_associated_profile_url()
+    @swagger_auto_schema(
+        operation_description='Get Notification by id',
+        responses={
+            status.HTTP_200_OK: ExtendedNotificationSerializer,
+            status.HTTP_400_BAD_REQUEST: 'Bad Request - Invalid Status',
+            status.HTTP_404_NOT_FOUND: 'Not Found - No Notification matches the given query'
         }
-        return Response(data, status=status.HTTP_200_OK)
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_description='Delete Notification by id',
+        responses={
+            status.HTTP_204_NO_CONTENT: 'Successfully deleted',
+            status.HTTP_404_NOT_FOUND: 'Not Found - No Notification matches the given query'
+            }
+        )
+    def delete(self, request, *args, **kwargs):
+        return super().delete(request, *args, **kwargs)

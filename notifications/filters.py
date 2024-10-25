@@ -15,9 +15,9 @@ class NotificationFilter(FilterSet):
     class Meta:
         model = Notification
         fields = {
-           'notification_type': ['exact', 'in'],
-           'status': ['exact', 'in'],
-           'delivery_status': ['exact', 'in'],
+           'notification_type': ['exact'],
+           'status': ['exact'],
+           'delivery_status': ['exact'],
            'investor__id': ['exact'],
            'startup__id': ['exact'],
         }

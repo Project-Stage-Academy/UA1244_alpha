@@ -70,9 +70,9 @@ class Notification(models.Model):
         return f'{type_}: {self.investor} -> {self.startup}' \
         + f' {self.sent_at if self.sent_at else ""}'
 
-    def set_read_status(self):
-        """Set notification status to READ"""
-        self.status = NotificationStatus.READ
+    def set_read_status(self, read):
+        """Set notification status to READ or UNREAD"""
+        self.status = NotificationStatus.READ if read else NotificationStatus.UNREAD
         self.save()
 
     def set_read_at(self, clear_=False):
