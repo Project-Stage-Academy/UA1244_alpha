@@ -52,7 +52,6 @@ INSTALLED_APPS = [
     'investment_tracking',
     'communications',
     'dashboard',
-    'commands',
     'notifications',
     'common',
 
