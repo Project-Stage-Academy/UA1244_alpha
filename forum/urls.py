@@ -19,7 +19,7 @@ from django.urls import (
     include,
     path,
 )
-
+from rest_framework.permissions import AllowAny
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 
@@ -28,9 +28,10 @@ schema_view = get_schema_view(
     openapi.Info(
         title='Forum API',
         default_version='1.0.0',
-        description='API documentation of Forum'
+        description='Forum API documentation'
     ),
     public=True,
+    permission_classes=[AllowAny],
 )
 
 urlpatterns = [
