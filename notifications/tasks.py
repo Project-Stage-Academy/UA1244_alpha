@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
 
-from Forum.settings import DEFAULT_FROM_EMAIL, SITE_URL
+from forum.settings import DEFAULT_FROM_EMAIL, SITE_URL
 from .models import Notification, NotificationType
 
 
