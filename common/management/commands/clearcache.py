@@ -6,7 +6,6 @@ logger = logging.getLogger('django')
 
 
 class Command(BaseCommand):
-    help = 'Clears the cache'
 
     def handle(self, *args, **kwargs):
         logger.debug('Starting cache clearing command')

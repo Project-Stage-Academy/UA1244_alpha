@@ -1,16 +1,24 @@
 import logging
-from typing import Optional, Any
 from rest_framework import permissions
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
 from investment_tracking.models import InvestmentTracking
 
 logger = logging.getLogger('users')
 
 
 class DetailedPermissionLogging(permissions.BasePermission):
-    def __init__(self):
-        self.log_prefix = self.__class__.__name__
+
+    log_prefix = "DetailedPermissionLogging"
+    AUTH_HEADER_KEY = getattr(settings, 'AUTH_HEADER_KEY', 'HTTP_AUTHORIZATION')
+
+    log_methods = {
+        'debug': logger.debug,
+        'info': logger.info,
+        'warning': logger.warning,
+        'error': logger.error
+    }
 
     def get_base_log_data(self, request, view) -> dict:
         """Generates basic information for logging"""
@@ -24,16 +32,13 @@ class DetailedPermissionLogging(permissions.BasePermission):
         }
 
     def log_event(self, level: str, message: str, extra_data: dict) -> None:
-        """Centralized event logging"""
-        try:
-            log_method = getattr(logger, level)
-            log_method(
-                f'{self.log_prefix}: {message}',
-                extra={'extra_data': extra_data},
-                exc_info=level == 'error'
-            )
-        except Exception as e:
-            logger.error(f'Logging failed: {str(e)}', exc_info=True)
+        """Centralized event logging with level mapping"""
+        log_method = self.log_methods.get(level, logger.info)
+        log_method(
+            f'{self.log_prefix}: {message}',
+            extra={'extra_data': extra_data},
+            exc_info=(level == 'error')
+        )
 
     def has_permission(self, request, view) -> bool:
         """General rights check"""
@@ -48,7 +53,7 @@ class DetailedPermissionLogging(permissions.BasePermission):
             return False
 
         # 2. Token check
-        auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+        auth_header = request.META.get(self.AUTH_HEADER_KEY, '')
         if auth_header:
             auth_type = auth_header.split()[0] if ' ' in auth_header else auth_header
             self.log_event('info', 'Token authentication', {

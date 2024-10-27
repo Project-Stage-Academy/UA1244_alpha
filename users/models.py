@@ -74,14 +74,27 @@ class CustomUserManager(BaseUserManager):
 
         Returns:
             User: Newly created superuser instance.
+
+        Raises:
+            ValueError: If the password is not provided.
         """
         logger.debug(f"Attempting to create superuser with email: {email}")
+
+        if not password:
+            logger.error("Password must be provided for superuser creation.")
+            raise ValueError("The password must be set.")
+
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
-        user = self.create_user(email, password, **extra_fields)
-        logger.info("New superuser created", extra={'email': email})
-        return user
+
+        try:
+            user = self.create_user(email, password, **extra_fields)
+            logger.info("New superuser created", extra={'email': email})
+            return user
+        except Exception as e:
+            logger.error(f"Failed to create superuser: {e}")
+            raise
 
 class Role(models.Model):
     """Model to represent user roles."""
