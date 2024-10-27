@@ -12,6 +12,9 @@ class InvestmentTracking(models.Model):
         startup (ForeignKey): The startup associated with the investment.
         saved_at (DateTimeField): The timestamp when the investment was recorded.
 
+    Meta:
+        unique constraint on (investor, startup) to prevent duplicate investments.
+
     Methods:
         __str__(): Returns a string representation of the investment tracking entry.
     """
@@ -32,4 +35,4 @@ class InvestmentTracking(models.Model):
         ]
 
     def __str__(self):
-        return f"Investor: {self.investor.__str__()}, StartUp: {self.startup.__str__()}, saved at:{self.saved_at}"
+        return f"Investor: {self.investor}, StartUp: {self.startup}, saved at:{self.saved_at}"

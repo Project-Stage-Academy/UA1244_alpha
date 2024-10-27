@@ -11,6 +11,9 @@ from rest_framework.views import APIView
 from investors.models import InvestorProfile
 from .serializers import InvestmentTrackingSerializerCreate, ListInvestmentTrackingSerializer
 
+def get_investor_profile(request):
+    return get_object_or_404(InvestorProfile, user=request.user)
+
 class InvestmentTrackingSaveView(APIView):
     """
     API view to save StartUps that are of interest to Investors
@@ -18,7 +21,7 @@ class InvestmentTrackingSaveView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, startup_id):
-        investor_profile = get_object_or_404(InvestorProfile, user=request.user)
+        investor_profile = get_investor_profile(request)
         startup = get_object_or_404(StartUpProfile, id=startup_id)
 
         serializer = InvestmentTrackingSerializerCreate(data={'investor': investor_profile.id, 'startup': startup.id})
@@ -28,7 +31,7 @@ class InvestmentTrackingSaveView(APIView):
                 investment_tracking.save()
                 return Response({"message": "StartUp has been successfully saved."}, status=status.HTTP_201_CREATED)
             except IntegrityError:
-                return Response({"message": "Startup is already saved."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"message": "Startup is already saved."}, status=status.HTTP_409_CONFLICT)
 
 
 class InvestmentTrackingListView(generics.ListAPIView):
@@ -36,14 +39,14 @@ class InvestmentTrackingListView(generics.ListAPIView):
     API view to get list all startups saved by the investor.
     """
     permission_classes = [IsAuthenticated]
-    queryset = InvestmentTracking.objects.all()
+    queryset = None
     serializer_class = ListInvestmentTrackingSerializer
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['startup__name']
     ordering_fields = ['saved_at', 'startup__name']
 
     def get_queryset(self):
-        investor_profile = get_object_or_404(InvestorProfile, user=self.request.user)
+        investor_profile = get_investor_profile(self.request)
         return InvestmentTracking.objects.filter(investor=investor_profile)
 
 
@@ -54,7 +57,7 @@ class InvestmentTrackingUnsaveView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, startup_id):
-        investor_profile = get_object_or_404(InvestorProfile, user=request.user)
+        investor_profile = get_investor_profile(request)
         startup = get_object_or_404(StartUpProfile, id=startup_id)
 
         investment_tracking = get_object_or_404(InvestmentTracking, investor=investor_profile, startup=startup)

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import *
+from .views import InvestmentTrackingSaveView, InvestmentTrackingListView, InvestmentTrackingUnsaveView
 
 urlpatterns = [
     path("startup/<int:startup_id>/save/", InvestmentTrackingSaveView.as_view(), name="save-followed-startups"),
