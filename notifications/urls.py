@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import NotificationsInvestorGet
+from .views import InvestorsNotificationsListView
 
 
 urlpatterns = [
-    path('investor/', NotificationsInvestorGet.as_view(), name = 'notifications-investor')
+    path('investor/', InvestorsNotificationsListView.as_view(), name = 'notifications-investor')
 ]

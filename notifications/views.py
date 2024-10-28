@@ -7,7 +7,8 @@ from investors.models import InvestorProfile
 from django.shortcuts import get_object_or_404
 
 
-class NotificationsInvestorGet(generics.ListAPIView):
+class InvestorsNotificationsListView(generics.ListAPIView):
+    """API view for get investors notifications"""
 
     serializer_class = NotificationSerializersGet
     permission_classes = [IsAuthenticated]

@@ -36,6 +36,7 @@ def send_notification_email(self, notification_id):
     """
     notification = Notification.objects.get(id=notification_id)
     startup = notification.startup.user_id
+    startup_name = notification.startup.name
     startupt_url = f'{SITE_URL}{reverse("startup-profile-by-id", args=[startup.id])}'
     investor = notification.investor.user
     investor_url = f'{SITE_URL}{reverse("investor-profile-by-id", args=[investor.id])}'
@@ -51,7 +52,7 @@ def send_notification_email(self, notification_id):
         case NotificationType.UPDATE:
             recipient = investor
             subject = 'Forum: Startup Profile Update'
-            message = f'Startup Profile [{startup.name}] you are following has new updates.'
+            message = f'Startup Profile [{startup_name}] you are following has new updates.'
             html_message = render_email_html_message(
                 recipient, message, startupt_url, 'startup')
 
