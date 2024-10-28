@@ -5,11 +5,10 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import User
-from .permissions import role_required
 from .serializers import UserSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
@@ -113,6 +112,7 @@ class UserProfileView(APIView):
             )
             raise
 
+
 class CustomUserViewSet(UserViewSet):
     @action(["post"], detail=False, throttle_classes=[UserRateThrottle])
     def reset_password(self, request, *args, **kwargs):
@@ -126,24 +126,40 @@ class CustomUserViewSet(UserViewSet):
         """
         return super().reset_password(request, *args, **kwargs)
 
-
-    @action(["post"], detail=False, permission_classes=[IsAuthenticated])
-    @role_required('Admin')
-    def set_active_role(self, request):
+    @action(["get"], detail=False, permission_classes=[IsAuthenticated])
+    def get_active_role(self, request):
         """
-        Set the active role for the authenticated user.
-
-        :param request: The incoming request containing the role name.
-        :return: A response indicating the success or failure of the operation.
+        Retrieve the current active role for the authenticated user.
         """
-        role_name = request.data.get('role_name')
         user = request.user
+        logger.debug(f"Retrieving active role for user {user.email}")
 
         try:
-            user.set_active_role(role_name)
-            return Response({"message": f"Active role set to '{role_name}'."}, status=status.HTTP_200_OK)
-        except ValidationError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            active_role = user.get_active_role_display()
+            logger.info(
+                "Active role successfully retrieved",
+                extra={
+                    'user_id': user.id,
+                    'email': user.email,
+                    'active_role': active_role
+                }
+            )
+            return Response({
+                "active_role": active_role
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(
+                "Failed to retrieve active role",
+                extra={
+                    'user_id': user.id,
+                    'email': user.email,
+                    'error': str(e)
+                }
+            )
+            return Response(
+                {"error": "Failed to retrieve active role"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(["get"], detail=False, permission_classes=[IsAuthenticated])
     def get_roles(self, request):
@@ -157,6 +173,120 @@ class CustomUserViewSet(UserViewSet):
         roles = user.get_roles_display()
         return Response({"roles": roles}, status=status.HTTP_200_OK)
 
+    @action(["post"], detail=False, permission_classes=[IsAuthenticated])
+    def add_role(self, request):
+        """Add a role to the user."""
+        role_name = request.data.get('role_name')
+        user = request.user
+        logger.debug(f"Attempting to add role '{role_name}' to user {user.email}")
+
+        try:
+            user.add_role(role_name)
+            logger.info(
+                "Role successfully added to user",
+                extra={
+                    'user_id': user.id,
+                    'email': user.email,
+                    'role': role_name
+                }
+            )
+            return Response({"message": f"Role '{role_name}' added."})
+        except ValidationError as e:
+            logger.error(
+                "Failed to add role to user",
+                extra={
+                    'user_id': user.id,
+                    'email': user.email,
+                    'role': role_name,
+                    'error': str(e)
+                }
+            )
+            return Response({"error": str(e)}, status=400)
+
+    @action(["post"], detail=False, permission_classes=[IsAuthenticated])
+    def remove_role(self, request):
+        """Remove a role from the user."""
+        role_name = request.data.get('role_name')
+        user = request.user
+        logger.debug(f"Attempting to remove role '{role_name}' from user {user.email}")
+
+        try:
+            user.remove_role(role_name)
+            logger.info(
+                "Role successfully removed from user",
+                extra={
+                    'user_id': user.id,
+                    'email': user.email,
+                    'role': role_name
+                }
+            )
+            return Response({"message": f"Role '{role_name}' removed."})
+        except ValidationError as e:
+            logger.error(
+                "Failed to remove role from user",
+                extra={
+                    'user_id': user.id,
+                    'email': user.email,
+                    'role': role_name,
+                    'error': str(e)
+                }
+            )
+            return Response({"error": str(e)}, status=400)
+
+    @action(["post"], detail=False, permission_classes=[IsAuthenticated])
+    def soft_delete(self, request):
+        """Soft delete user account."""
+        user = request.user
+        logger.debug(f"Attempting to soft delete user account: {user.email}")
+
+        try:
+            user.soft_delete()
+            logger.info(
+                "User account successfully soft deleted",
+                extra={
+                    'user_id': user.id,
+                    'email': user.email
+                }
+            )
+            return Response({"message": "Account successfully deleted."})
+        except ValidationError as e:
+            logger.error(
+                "Failed to soft delete user account",
+                extra={
+                    'user_id': user.id,
+                    'email': user.email,
+                    'error': str(e)
+                }
+            )
+            return Response({"error": str(e)}, status=400)
+
+    @action(["post"], detail=False, permission_classes=[IsAuthenticated])
+    def reactivate(self, request):
+        """Reactivate soft-deleted account."""
+        user = request.user
+        logger.debug(f"Attempting to reactivate user account: {user.email}")
+
+        try:
+            user.reactivate()
+            logger.info(
+                "User account successfully reactivated",
+                extra={
+                    'user_id': user.id,
+                    'email': user.email
+                }
+            )
+            return Response({"message": "Account successfully reactivated."})
+        except ValidationError as e:
+            logger.error(
+                "Failed to reactivate user account",
+                extra={
+                    'user_id': user.id,
+                    'email': user.email,
+                    'error': str(e)
+                }
+            )
+            return Response({"error": str(e)}, status=400)
+
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
@@ -165,15 +295,28 @@ class LogoutView(APIView):
     Class for successfull user log out
     """
     def post(self, request):
-        refresh_token = request.data["refresh"]
+        refresh_token = request.data.get("refresh")
+        user = request.user
+        logger.debug(f"Logout attempt for user: {user.email}")
+
         if refresh_token:
             token = RefreshToken(refresh_token)
             token.set_exp(lifetime=timedelta(seconds=0))
         else:
+            logger.error(
+                "Logout failed: refresh token not provided",
+                extra={'user_id': user.id, 'email': user.email}
+            )
             return Response({"error": "The refresh token hadn't been provided"}, status=status.HTTP_400_BAD_REQUEST)
 
         access_token = request.auth.token
         ac_token = AccessToken(access_token)
         ac_token.set_exp(lifetime=timedelta(seconds=0))
+
+        logger.info(
+            "User successfully logged out",
+            extra={'user_id': user.id, 'email': user.email}
+        )
+
         return Response({"message": "User logged out successfully"}, status=status.HTTP_200_OK)
 
