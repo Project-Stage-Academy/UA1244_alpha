@@ -1,14 +1,14 @@
 from dataclasses import dataclass
 from pymongo import MongoClient
 import logging
-from .base import AbstractRepository
+from .base import BaseRepository
 from communications.entities.messages import ChatRoom, Message
 
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger('django')
 
 @dataclass
-class MongoDBRepository(AbstractRepository):
+class MongoDBRepository(BaseRepository):
     mongo_db_client: MongoClient
     mongo_db_db_name: str
     mongo_db_collection_name: str

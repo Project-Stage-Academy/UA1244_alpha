@@ -1,3 +1,4 @@
+import logging
 from django.http import Http404
 from rest_framework import generics, status
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -17,6 +18,9 @@ from startups.utils import (
 )
 
 
+logger = logging.getLogger('django')
+
+
 class StartUpProfilesView(generics.ListAPIView):
     """
     API view to list all startup profiles with filtering and pagination.
@@ -33,6 +37,12 @@ class StartUpProfilesView(generics.ListAPIView):
     ordering_fields = ['name', 'created_at']
     ordering = ['created_at']
 
+    def list(self, request, *args, **kwargs):
+        logger.info("Fetching startup profiles")
+        response = super().list(request, *args, **kwargs)
+        logger.info(f"Fetched {len(response.data)} startup profiles")
+        return response
+
 
 class StartUpProfileCreate(generics.CreateAPIView):
     """
@@ -42,19 +52,23 @@ class StartUpProfileCreate(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
+        logger.info("Creating a new startup profile")
         try:
             response = super().create(request, *args, **kwargs)
+            logger.info(f"Startup profile created successfully: {response.data['id']}")
             return get_success_response(
                 message='Startup profile created successfully',
                 data=response.data,
                 status=status.HTTP_201_CREATED
             )
         except ValidationError as e:
+            logger.error("Validation error occurred while creating startup profile", exc_info=True)
             return Response(
                 {"error": "Invalid data", "details": e.detail},
                 status=status.HTTP_400_BAD_REQUEST
             )
         except PermissionDenied as e:
+            logger.error("Permission denied error while creating startup profile", exc_info=True)
             return Response(
                 {"error": "Permission denied", "details": str(e)},
                 status=status.HTTP_403_FORBIDDEN
@@ -73,15 +87,19 @@ class StartUpProfileUpdate(generics.UpdateAPIView):
         return StartUpProfile.objects.filter(user_id=self.request.user)
 
     def update(self, request, *args, **kwargs):
+        logger.info("Updating startup profile")
         try:
             updating_obj = self.get_object()
         except Http404 as e:
+            logger.error("Startup profile not found", exc_info=True)
             return handle_object_not_found(e)
 
         if updating_obj.user_id != request.user:
+            logger.error("User does not have permission to update this profile")
             raise PermissionDenied("You do not have permission to update this profile.")
 
         response = super().update(request, *args, **kwargs)
+        logger.info(f"Startup profile updated successfully: {response.data['id']}")
         return get_success_response(
             message='Startup profile updated successfully',
             data=response.data
@@ -100,8 +118,10 @@ class StartUpProfileViewById(generics.RetrieveAPIView):
         return StartUpProfile.objects.filter(pk=self.kwargs['pk'])
 
     def retrieve(self, request, *args, **kwargs):
+        logger.info(f"Retrieving startup profile with ID: {self.kwargs['pk']}")
         try:
             obj = self.get_object()
+            logger.info(f"Startup profile retrieved successfully: {obj.id}")
         except Http404 as e:
             return handle_object_not_found(e)
 
