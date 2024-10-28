@@ -1,3 +1,4 @@
+import bleach
 from rest_framework import serializers
 from communications import init_container, MongoDBRepository
 from communications.entities.messages import Message, ChatRoom
@@ -12,6 +13,18 @@ class MessageSerializer(serializers.Serializer):
     receiver_id = serializers.IntegerField()
     content = serializers.CharField(max_length=1000)
     read_at = serializers.DateTimeField(required=False, allow_null=True)
+
+    def validate_content(self, value):
+        """Custom validation for content field to check for XSS vulnerabilities."""
+        if "<script>" in value or "javascript:" in value:
+            raise serializers.ValidationError("Content contains potentially dangerous XSS code.")
+
+        sanitized_content = bleach.clean(value, tags=[], attributes={}, styles=[], strip=True)
+
+        if not sanitized_content:
+            raise serializers.ValidationError("Content cannot be empty after sanitization.")
+
+        return sanitized_content
 
     def create(self, validated_data):
         """Create a new Message instance from validated data and save it in MongoDB."""
