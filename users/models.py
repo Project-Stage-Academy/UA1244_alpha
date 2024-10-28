@@ -108,6 +108,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ],
     )
     roles = models.ManyToManyField(Role, related_name='users')
+    active_role = models.ForeignKey(Role, null=True, blank=True, on_delete=models.SET_NULL, related_name='active_users')
     profile_picture = models.ImageField(
         upload_to='profile_pics/',
         validators=[ImageValidator(max_size=5242880, max_width=1200, max_height=800)],
@@ -191,6 +192,36 @@ class User(AbstractBaseUser, PermissionsMixin):
                 del self._cached_roles
         else:
             logger.warning(f"User {self.email} does not have the role: {role_name}")
+
+    def set_active_role(self, role_name):
+        """
+        Set the active role for the user.
+
+        Args:
+            role_name (str): The name of the role to set as active.
+
+        Raises:
+            ValidationError: If the role is not assigned to the user or does not exist.
+        """
+        logger.debug(f"Attempting to set active role for user {self.email}. Requested role: '{role_name}'.")
+
+        role = self.roles.filter(name=role_name).first()
+        if not role:
+            logger.error(f"Role '{role_name}' not found for user {self.email}.")
+            raise ValidationError(f"Role '{role_name}' is not assigned to the user.")
+
+        if self.active_role and self.active_role != role:
+            logger.warning(f"User  {self.email} is attempting to set an active role that is not their current role.")
+
+        self.active_role = role
+        self.save()
+        logger.info(f"Active role for user {self.email} set to '{role_name}'.")
+
+    def get_active_role_display(self):
+        """Returns a string representation of the user's active role."""
+        active_role_display = self.active_role.name if self.active_role else 'No active role'
+        logger.debug(f"User  {self.email} active role display: '{active_role_display}'.")
+        return active_role_display
 
     def has_role(self, role_name):
         """

@@ -1,5 +1,6 @@
 from djoser.views import UserViewSet
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
@@ -7,6 +8,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import User
+from .permissions import role_required
 from .serializers import UserSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
@@ -78,6 +80,38 @@ class CustomUserViewSet(UserViewSet):
 
         """
         return super().reset_password(request, *args, **kwargs)
+
+
+    @action(["post"], detail=False, permission_classes=[IsAuthenticated])
+    @role_required('Admin')
+    def set_active_role(self, request):
+        """
+        Set the active role for the authenticated user.
+
+        :param request: The incoming request containing the role name.
+        :return: A response indicating the success or failure of the operation.
+        """
+        role_name = request.data.get('role_name')
+        user = request.user
+
+        try:
+            user.set_active_role(role_name)
+            return Response({"message": f"Active role set to '{role_name}'."}, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(["get"], detail=False, permission_classes=[IsAuthenticated])
+    def get_roles(self, request):
+        """
+        Retrieve all roles for the authenticated user.
+
+        :param request: The incoming request.
+        :return: A response containing the user's roles.
+        """
+        user = request.user
+        roles = user.get_roles_display()
+        return Response({"roles": roles}, status=status.HTTP_200_OK)
+
       
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
