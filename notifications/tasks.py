@@ -3,10 +3,9 @@ from celery import shared_task
 
 from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
-from django.urls import reverse
 from django.utils import timezone
 
-from Forum.settings import DEFAULT_FROM_EMAIL, SITE_URL
+from forum.settings import DEFAULT_FROM_EMAIL
 from .models import Notification, NotificationType
 
 
@@ -35,10 +34,9 @@ def send_notification_email(self, notification_id):
     - notification_id
     """
     notification = Notification.objects.get(id=notification_id)
+    associated_profile_url = notification.get_associated_profile_url()
     startup = notification.startup.user_id
-    startupt_url = f'{SITE_URL}{reverse("startup-profile-by-id", args=[startup.id])}'
     investor = notification.investor.user
-    investor_url = f'{SITE_URL}{reverse("investor-profile-by-id", args=[investor.id])}'
 
     match notification.notification_type:
         case NotificationType.FOLLOW:
@@ -46,14 +44,14 @@ def send_notification_email(self, notification_id):
             subject = 'Forum: New Follower'
             message = 'Another investor has started following you.'
             html_message = render_email_html_message(
-                recipient, message, investor_url, 'investor')
+                recipient, message, associated_profile_url, 'investor')
 
         case NotificationType.UPDATE:
             recipient = investor
             subject = 'Forum: Startup Profile Update'
             message = f'Startup Profile [{startup.name}] you are following has new updates.'
             html_message = render_email_html_message(
-                recipient, message, startupt_url, 'startup')
+                recipient, message, associated_profile_url, 'startup')
 
         case NotificationType.MESSAGE:
             pass
