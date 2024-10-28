@@ -7,7 +7,7 @@ from communications.entities.messages import (
 )
 
 
-class AbstractRepository(ABC):
+class BaseRepository(ABC):
     @abstractmethod
     def create_chatroom(self, chatroom: ChatRoom) -> None:
         """Create a new chatroom in the repository."""

@@ -10,6 +10,8 @@ from rest_framework import status
 from .models import User
 from .serializers import UserSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from datetime import timedelta
 
 logger = logging.getLogger('users')
 
@@ -17,12 +19,22 @@ logger = logging.getLogger('users')
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
     Obtains a token pair for a user.
+
+    :param request: The incoming request.
+    :param args: Additional arguments.
+    :param kwargs: Additional keyword arguments.
+    :return: A response containing the token pair.
     """
     serializer_class = TokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
         """
-        Handles the POST request for token generation.
+        Handles the POST request.
+
+        :param request: The incoming request.
+        :param args: Additional arguments.
+        :param kwargs: Additional keyword arguments.
+        :return: A response containing the token pair.
         """
         logger.debug(f"Token obtain attempt for user with email: {request.data.get('email')}")
 
@@ -61,12 +73,18 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class UserProfileView(APIView):
     """
     Retrieves the user's profile information.
+
+    :param request: The incoming request.
+    :return: A response containing the user's profile information.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         """
-        Handles the GET request for user profile.
+        Handles the GET request.
+
+        :param request: The incoming request.
+        :return: A response containing the user's profile information.
         """
         user = request.user
         logger.debug(f"Profile request for user: {user.email}")
@@ -106,5 +124,22 @@ class CustomUserViewSet(UserViewSet):
         """
         return super().reset_password(request, *args, **kwargs)
 
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    """
+    Class for successfull user log out
+    """
+    def post(self, request):
+        refresh_token = request.data["refresh"]
+        if refresh_token:
+            token = RefreshToken(refresh_token)
+            token.set_exp(lifetime=timedelta(seconds=0))
+        else:
+            return Response({"error": "The refresh token hadn't been provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        access_token = request.auth.token
+        ac_token = AccessToken(access_token)
+        ac_token.set_exp(lifetime=timedelta(seconds=0))
+        return Response({"message": "User logged out successfully"}, status=status.HTTP_200_OK)
 
