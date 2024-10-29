@@ -45,9 +45,10 @@ class StartUpProfileCreate(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         try:
             response = super().create(request, *args, **kwargs)
-            return get_success_response(
-                message='Startup profile created successfully',
-                data=response.data,
+            return Response(
+                {
+                    "message": "Startup profile created successfully",
+                    "data": response.data,},
                 status=status.HTTP_201_CREATED
             )
         except ValidationError as e:

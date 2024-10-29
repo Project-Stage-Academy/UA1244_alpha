@@ -1,12 +1,20 @@
+import logging
+
 from django.db import models
+from django.forms import ValidationError
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.contrib.auth import get_user_model
 
 from forum.settings import SITE_URL
 from startups.models import StartUpProfile
 from investors.models import InvestorProfile
+from users.models import Role
 
+
+User = get_user_model()
+logger = logging.getLogger('__name__')
 
 class NotificationType(models.IntegerChoices):
     """Notification type class (IntegerChoices)
@@ -105,3 +113,50 @@ class Notification(models.Model):
                 pass
 
         return associated_url
+
+
+class RolesNotifications(models.Model):
+    """Notification types allowed per Role
+
+    Fields:
+    - role (ForeignKey): role id
+    - notification_type(IntegerField): notification type from NotificationType Integerchoices class
+    
+    Default (fixtures):
+    - Startup: 1 (FOLLOW), 2 (MESSAGE)
+    - Investor: 2 (MESSAGE), 3 (UPDATE)"""
+
+    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    notification_type = models.IntegerField(choices=NotificationType.choices)
+
+    class Meta:
+        unique_together = ['role', 'notification_type']
+            
+
+    
+class NotificationPreferences(models.Model):
+    """Notification Preferences model
+    
+    Fields:
+    - user (ForeignKey): user id
+    - role (ForeignKey): role id
+    - notification_type (IntegerField): notification type from NotificationType IntegerChoices class
+    - email (BooleanField): email notifications enabled/disabled, default=True
+    - in_app (BooleanField): in-app notifications enabled/disabled, default=True
+    """
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    notification_type = models.IntegerField(choices=NotificationType.choices)
+    email = models.BooleanField(default=True)
+    in_app = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ['user', 'role', 'notification_type']
+
+    def check_notification_type(self, notification_type):
+        allowed = RolesNotifications.objects.filter(
+            role=self.role,
+            notification_type=notification_type
+        )
+        return allowed.exists()
