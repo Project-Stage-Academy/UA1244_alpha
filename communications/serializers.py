@@ -16,20 +16,24 @@ class MessageSerializer(serializers.Serializer):
 
     def validate_content(self, value):
         """Custom validation for content field to check for XSS vulnerabilities."""
-        if "<script>" in value or "javascript:" in value:
-            raise serializers.ValidationError("Content contains potentially dangerous XSS code.")
+        sanitized_content = bleach.clean(value, tags=[], attributes={}, strip=True)
 
-        sanitized_content = bleach.clean(value, tags=[], attributes={}, styles=[], strip=True)
-
-        if not sanitized_content:
-            raise serializers.ValidationError("Content cannot be empty after sanitization.")
+        if sanitized_content != value:
+            raise serializers.ValidationError(
+                "Content contains unsupported characters or formatting and was sanitized."
+            )
 
         return sanitized_content
 
     def create(self, validated_data):
         """Create a new Message instance from validated data and save it in MongoDB."""
+        mongo_repo = self.context.get('mongo_repo')
+        if mongo_repo is None:
+            raise serializers.ValidationError("Database repository not provided in serializer context.")
+
         message = Message(**validated_data)
-        mongo_container.add_message(validated_data['room_id'], message)
+        mongo_repo.add_message(message.receiver_id, message)
+
         return message
 
 
@@ -43,6 +47,9 @@ class ChatRoomSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         """Create a new ChatRoom instance and save it to MongoDB"""
+        mongo_repo = self.context.get('mongo_repo')
+        if mongo_repo is None:
+            raise serializers.ValidationError("Database repository not provided in serializer context.")
 
         messages_data = validated_data.pop("messages", [])
         chat_room = ChatRoom(**validated_data)
