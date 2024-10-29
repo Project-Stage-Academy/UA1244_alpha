@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Notification
 
-class NotificationSerializersGet(serializers.ModelSerializer):
+class NotificationForInvestorSerializersList(serializers.ModelSerializer):
     """Notification Serializer for investors notifications"""
     notification_type_display = serializers.CharField(source='get_notification_type_display', read_only=True)
 

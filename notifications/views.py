@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import generics, status
-from .serializers import NotificationSerializersGet
+from .serializers import NotificationForInvestorSerializersList
 from rest_framework.permissions import IsAuthenticated
 from .models import Notification
 from investors.models import InvestorProfile
@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404
 class InvestorsNotificationsListView(generics.ListAPIView):
     """API view for get investors notifications"""
 
-    serializer_class = NotificationSerializersGet
+    serializer_class = NotificationForInvestorSerializersList
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
