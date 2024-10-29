@@ -11,7 +11,7 @@ from pymongo.errors import PyMongoError
 from communications.entities.messages import ChatRoom, Message
 from .base import BaseRepository
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('django')
 
 cipher_suite = Fernet(settings.ENCRYPTION_KEY)
 
