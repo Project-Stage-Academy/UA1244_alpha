@@ -26,6 +26,7 @@ class NotificationStatus(models.IntegerChoices):
     UNREAD = 0, _('Unread')
     READ = 1, _('Read')
 
+
 class NotificationDeliveryStatus(models.IntegerChoices):
     """Notification delivary status class (IntegerChoices)
     
@@ -34,6 +35,7 @@ class NotificationDeliveryStatus(models.IntegerChoices):
     """
     FAILED = 0, _('Failed')
     SENT = 1, _('Sent')
+
 
 class Notification(models.Model):
     """Notification model
@@ -57,7 +59,7 @@ class Notification(models.Model):
     startup = models.ForeignKey(StartUpProfile, on_delete=models.CASCADE)
     message_id = models.CharField(max_length=24, blank=True, null=True)
     delivery_status = models.IntegerField(
-         choices=NotificationDeliveryStatus, blank=True, null=True)
+        choices=NotificationDeliveryStatus, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(blank=True, null=True)
     read_at = models.DateTimeField(blank=True, null=True)
@@ -65,7 +67,7 @@ class Notification(models.Model):
     def __str__(self):
         type_ = NotificationType(self.notification_type).label
         return f'{type_}: {self.investor} -> {self.startup}' \
-        + f' {self.sent_at if self.sent_at else ""}'
+            + f' {self.sent_at if self.sent_at else ""}'
 
     def set_read_status(self):
         """Set notification status to READ"""

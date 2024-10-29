@@ -1,5 +1,7 @@
 import logging
 from dataclasses import asdict
+
+from django.utils.decorators import method_decorator
 from django_ratelimit.decorators import ratelimit
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,40 +11,38 @@ from .permissions import IsOwnerOrRecipient
 from .serializers import MessageSerializer, ChatRoomSerializer
 from communications import init_container, MongoDBRepository
 
-
 logger = logging.getLogger(__name__)
 
 container = init_container()
 mongo_container = container.resolve(MongoDBRepository)
 
 
+@method_decorator(ratelimit(key='ip', rate='15/m', method='POST', block=True), name='post')
 class CreateChatRoomView(APIView):
     """
     View for creating a new chat room between a startup and an investor.
     """
 
-    @ratelimit(key='ip', rate='10/m', method='POST', block=True)
     def post(self, request):
         serializer = ChatRoomSerializer(data=request.data)
 
         if serializer.is_valid():
             chat_room = serializer.create(serializer.validated_data)
-            logger.info(f"Chat room created with ID: {chat_room.room_id}")
+            logger.info(f"Chat room created with ID: {chat_room.title}")
 
-            return Response({'room_id': str(chat_room.room_id)}, status=status.HTTP_201_CREATED)
+            return Response({'room_id': str(chat_room.title)}, status=status.HTTP_201_CREATED)
 
         logger.warning(f"Invalid data for creating chat room: {serializer.errors}")
-
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@method_decorator(ratelimit(key='ip', rate='60/m', method='POST', block=True), name='post')
 class SendMessageView(APIView):
     """
     View for sending a message in a specific chat room.
     """
     permission_classes = (IsOwnerOrRecipient,)
 
-    @ratelimit(key='ip', rate='20/m', method='POST', block=True)
     def post(self, request, room_id):
         logger.info(f"SendMessageView POST request received for room_id: {room_id}")
 
@@ -63,13 +63,13 @@ class SendMessageView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@method_decorator(ratelimit(key='ip', rate='15/m', method='GET', block=True), name='get')
 class ListMessagesView(APIView):
     """
     View for listing all messages in a specific chat room.
     """
     permission_classes = (IsOwnerOrRecipient,)
 
-    @ratelimit(key='ip', rate='10/m', method='GET', block=True)
     def get(self, request, room_id):
         logger.info(f"ListMessagesView GET request received for room_id: {room_id}")
 

@@ -2,8 +2,10 @@ import json
 import logging
 
 from channels.generic.websocket import AsyncWebsocketConsumer
+
 from communications import init_container
-from communications.entities.messages import Message
+from communications.domain.entities.messages import Message
+from communications.domain.values.messages import Text
 from communications.services.messages import CreateMessageCommand
 
 logger = logging.getLogger(__name__)
@@ -43,7 +45,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             container = init_container()
             message_command = container.resolve(CreateMessageCommand)
             await message_command.handle(
-                message=Message(sender_id=sender_id, receiver_id=receiver_id, content=message),
+                message=Message(sender_id=sender_id, receiver_id=receiver_id, content=Text(value=message)),
                 room_name=self.room_name
             )
 

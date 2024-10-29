@@ -7,7 +7,7 @@ from django.conf import settings
 from pymongo import MongoClient
 from pymongo.synchronous.collection import Collection
 
-from communications.entities.messages import ChatRoom, Message
+from communications.domain.entities.messages import ChatRoom, Message
 from .base import BaseRepository
 
 logger = logging.getLogger(__name__)
@@ -28,21 +28,14 @@ class MongoDBRepository(BaseRepository):
     def _decrypt_message(self, encrypted_message: dict) -> Message:
         """Decrypt the message content and return a Message object."""
         decrypted_content = cipher_suite.decrypt(encrypted_message['content']).decode()
-        decrypted_message = Message(**encrypted_message, content=decrypted_content)
+        message_data = {k: v for k, v in encrypted_message.items() if k != 'content'}
+        message_data['content'] = decrypted_content
+        decrypted_message = Message(**message_data)
         return decrypted_message
 
     def create_chatroom(self, chatroom: ChatRoom):
-        chatroom_dict = chatroom.__dict__
-        chatroom_dict['messages'] = [
-            {**message.__dict__, 'content': cipher_suite.encrypt(message.content.encode())}
-            for message in chatroom.messages
-        ]
-
-        logger.info(f"Creating chatroom with ID: {chatroom.room_id}")
-
-        self._collection.insert_one(chatroom_dict)
-
-        logger.info(f"Chatroom created successfully: {chatroom_dict}")
+        self._collection.insert_one(chatroom.__dict__)
+        logger.info(f"Chatroom created successfully with ID: {chatroom.title}")
 
     def get_chatroom(self, room_id: str) -> ChatRoom | None:
         logger.info(f"Retrieving chatroom with ID: {room_id}")
@@ -51,7 +44,7 @@ class MongoDBRepository(BaseRepository):
         if data:
             messages = [self._decrypt_message(msg) for msg in data.get('messages', [])]
             chatroom = ChatRoom(
-                room_id=data['room_id'],
+                title=data['room_id'],
                 startup_id=data.get('startup_id'),
                 investor_id=data.get('investor_id'),
                 messages=messages
@@ -64,9 +57,11 @@ class MongoDBRepository(BaseRepository):
 
     def add_message(self, room_id: str, message: Message):
         message_dict = message.__dict__
-        logger.info(f"Adding message to chatroom ID: {room_id} - Message: {message_dict}")
+        logger.info(f"Adding message to chatroom ID: {room_id} - Message: {message.oid}")
 
-        message_dict['content'] = cipher_suite.encrypt(message.content.encode())
+        message_dict['content'] = cipher_suite.encrypt(
+            message.content.as_generic_type().encode()
+        )
 
         result = self._collection.update_one(
             {"room_id": room_id},

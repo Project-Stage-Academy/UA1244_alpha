@@ -1,11 +1,7 @@
 from dataclasses import dataclass
 
-from channels.db import database_sync_to_async
-from django.conf import settings
-from django.core.mail import send_mail
-
 from communications import BaseEvent
-from communications.entities.messages import ChatRoom, Message
+from communications.domain.entities.messages import ChatRoom, Message
 from communications.repositories.base import BaseRepository
 
 
@@ -25,10 +21,3 @@ class CreateMessageCommand:
     async def handle(self, room_name: str, message: Message):
         self.mongo_repo.add_message(room_name, message)
         self.messege_event.trigger(message=message)
-
-        from notifications.models import Notification
-        await database_sync_to_async(Notification.objects.create)(
-            investor_id=message.sender_id,
-            startup_id=message.receiver_id,
-            notification_type=2
-        )

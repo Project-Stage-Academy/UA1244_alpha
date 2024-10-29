@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from communications.entities.messages import (
+from communications.domain.entities.messages import (
     ChatRoom,
     Message
 )

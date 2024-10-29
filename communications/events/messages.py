@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from channels.db import database_sync_to_async
 from channels.layers import get_channel_layer
 
-from communications.entities.messages import Message
+from communications.domain.entities.messages import Message
 from communications.events.base import BaseEvent
 
 logger = logging.getLogger(__name__)
@@ -18,6 +18,7 @@ class MessageNotificationEvent(BaseEvent):
             await database_sync_to_async(Notification.objects.create)(
                 investor_id=message.sender_id,
                 startup_id=message.receiver_id,
+                notification_type=2
             )
 
             logger.info(f"Notification object created for message from sender {message.sender_id}")
@@ -27,7 +28,7 @@ class MessageNotificationEvent(BaseEvent):
                 f'notifications_{message.receiver_id}',
                 {
                     'type': 'send_notification',
-                    'notification': f'New message: {message.content}',
+                    'notification': f'New message: {message.content.as_generic_type()}',
                 }
             )
         except Exception as e:
