@@ -11,11 +11,14 @@ from forum.settings import SITE_URL
 from startups.models import StartUpProfile
 from investors.models import InvestorProfile
 from users.models import Role
-from communications.entities.messages import Message
+from communications import init_container, MongoDBRepository
 
 
 User = get_user_model()
 logger = logging.getLogger('__name__')
+
+container = init_container()
+mongo_container = container.resolve(MongoDBRepository)
 
 class NotificationType(models.IntegerChoices):
     """Notification type class (IntegerChoices)
@@ -116,10 +119,7 @@ class Notification(models.Model):
         return associated_url
     
     def get_message_participants(self):
-        try:
-            message = Message.objects.get(id=self.message_id)
-        except message.DoesNotExist:
-            logger.error(f'Message object with this id not found: {self.message_id}')
+        return mongo_container.get_message_participants(self.message_id)
     
     def get_role_profile(self, role):
         """get startup or investor fields by role name"""
@@ -135,38 +135,61 @@ class Notification(models.Model):
         
     def get_notification_preferences(self):
         """check email and in_app preferences for a notification"""
+
         notification_preferences = {
             'email': True,
             'in_app': True
         }
         try:
             roles = RolesNotifications.objects.filter(
-                notification_type = self.notification_type)
-            role_id = roles[0]
-            # if len(roles) == 1 else ...
+                notification_type=self.notification_type)
+            
+            if roles.count() > 1 and self.notification_type == NotificationType.MESSAGE:
+                if self.handle_message_preferences():
+                    preferences = self.handle_message_preferences()
 
-            role = Role.objects.get(id=role_id)
-            receiver_profile = self.get_role_profile(role.name)
-
-            preferences = NotificationPreferences.get(
-                user_id=receiver_profile.get_user_id(),
-                role=role,
-                notification_type=self.notification_type,
-            )
-
+            elif roles.count() == 1:
+                role = roles.first()
+                receiver_profile = self.get_role_profile(role.name)
+                preferences = NotificationPreferences.get(
+                    user_id=receiver_profile.get_user_id(),
+                    role=role,
+                    notification_type=self.notification_type,
+                )
         except (Notification.DoesNotExist, RolesNotifications.DoesNotExist,
                 Role.DoesNotExist) as e:
             logger.error(f'Notification or Role Notification or Role object not found\n{e}')
         except AttributeError as e:
-            logger.error(e)
-
+            logger.error(f'Invalid role {e}')
         else:
-            notification_preferences = {
-                'email': preferences.email,
-                'in_app': preferences.in_app
-            }
+            notification_preferences['email'] = preferences.email
+            notification_preferences['in_app'] = preferences.in_app
 
         return notification_preferences
+    
+    def handle_message_preferences(self):
+        preferences = None
+        participants = self.get_message_participants()
+        if participants:
+            receiver_user_id = participants.get('receiver_id')
+
+            try:
+                receiver_user = User.objects.get(id=receiver_user_id)
+                roles = receiver_user.roles.all()
+                if roles.exists():
+                    allowed_notifications = RolesNotifications.objects.filter(
+                            notification_type=self.notification_type,
+                            role__in=roles
+                    )
+                    if allowed_notifications.exists():
+                        preferences = NotificationPreferences.get(
+                            user_id=receiver_user_id,
+                            notification_type=self.notification_type
+                        )
+            except User.DoesNotExist:
+                logger.error(f'User with id {receiver_user_id} not found')
+
+            return preferences
 
 
 class RolesNotifications(models.Model):

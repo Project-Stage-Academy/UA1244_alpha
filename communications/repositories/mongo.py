@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from bson import ObjectId
 from pymongo import MongoClient
 import logging
 from .base import BaseRepository
@@ -58,3 +59,14 @@ class MongoDBRepository(BaseRepository):
             logger.info("Message added successfully.")
         else:
             logger.warning(f"Failed to add message to chatroom ID: {room_id}. Room may not exist.")
+
+    def get_message_participants(self, message_id):
+        data = self._collection.find_one({"_id": ObjectId(str(message_id))})
+        if data:
+            return {
+                "recipient": data.get("recipient_id"),
+                "sender": data.get("sender_id")
+            }
+        else:
+            logger.warning(f"Message with ID {message_id} not found")
+            return None
