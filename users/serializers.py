@@ -1,12 +1,53 @@
 import logging
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 from .models import Role, User
 from django.db import transaction
 
 logger = logging.getLogger('users')
 
 User = get_user_model()
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = 'email'
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        if not email or not password:
+            raise serializers.ValidationError(
+                'Must include "email" and "password".'
+            )
+
+        user = authenticate(
+            request=self.context.get('request'),
+            email=email,
+            password=password
+        )
+
+        if not user:
+            raise serializers.ValidationError(
+                'No active account found with the given credentials'
+            )
+
+        if not user.is_active:
+            raise serializers.ValidationError('Account is disabled.')
+
+        refresh = self.get_token(user)
+
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'roles': [role.name for role in user.roles.all()]
+            }
+        }
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -168,6 +209,7 @@ class UserSerializer(serializers.ModelSerializer):
                     "Restricted fields removed for non-staff user",
                     extra={'user_email': instance.email}
                 )
+            data['roles'] = [role.name for role in instance.roles.all()]
 
             logger.info(
                 "Successfully serialized user data",

@@ -18,6 +18,7 @@ from common.validators.image_validator import ImageValidator
 
 logger = logging.getLogger('users')
 
+
 class CustomUserManager(BaseUserManager):
     """Custom user manager for the User model."""
 
