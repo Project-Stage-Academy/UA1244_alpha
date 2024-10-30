@@ -61,6 +61,8 @@ INSTALLED_APPS = [
     'django_filters',
     'simple_history',
     'channels',
+    'drf_yasg',
+
 ]
 
 MIDDLEWARE = [
@@ -278,6 +280,18 @@ DJOSER = {
     "EMAIL_FRONTEND_SITE_NAME": "forum",
 }
 
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+
+}
 
 AUTH_USER_MODEL = 'users.User'
 

@@ -19,7 +19,20 @@ from django.urls import (
     include,
     path,
 )
+from rest_framework.permissions import AllowAny
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
 
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title='Forum API',
+        default_version='1.0.0',
+        description='Forum API documentation'
+    ),
+    public=True,
+    permission_classes=[AllowAny],
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -33,4 +46,5 @@ urlpatterns = [
     path('investment_tracking/', include('investment_tracking.urls')),
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
+    path('swagger/schema/', schema_view.with_ui('swagger', cache_timeout=0), name='swagger-schema'),
 ]

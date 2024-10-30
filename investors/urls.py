@@ -1,4 +1,3 @@
-from django.contrib import admin
 from django.urls import path
 
 from .views import (
@@ -6,5 +5,6 @@ from .views import (
 )
 
 urlpatterns = [
-    path('investor-profile/<int:pk>/', InvestorProfileViewById.as_view(), name='investor-profile-by-id'),
+    path('investor-profile/<int:pk>/', InvestorProfileViewById.as_view(), 
+         name='investor-profile-by-id'),
 ]

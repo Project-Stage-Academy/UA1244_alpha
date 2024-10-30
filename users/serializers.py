@@ -149,6 +149,7 @@ class UserSerializer(serializers.ModelSerializer):
             'last_login', 'created_at', 'updated_at', 'is_soft_deleted'
         )
         read_only_fields = ('is_active',)
+        ref_name = 'User_'
 
     def to_representation(self, instance):
         """Control the visibility of fields depending on the user's role"""
