@@ -28,11 +28,12 @@ class MessageSerializer(serializers.Serializer):
     def create(self, validated_data):
         """Create a new Message instance from validated data and save it in MongoDB."""
         mongo_repo = self.context.get('mongo_repo')
+        room_id = validated_data.get('room_id')
         if mongo_repo is None:
             raise serializers.ValidationError("Database repository not provided in serializer context.")
 
         message = Message(**validated_data)
-        mongo_repo.add_message(message.receiver_id, message)
+        mongo_repo.add_message(room_id, message)
 
         return message
 

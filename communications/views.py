@@ -1,14 +1,13 @@
 import logging
 from dataclasses import asdict
-from django_ratelimit.decorators import ratelimit
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
 
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from communications import init_container, MongoDBRepository
 from .permissions import IsOwnerOrRecipient
 from .serializers import MessageSerializer, ChatRoomSerializer
-from communications import init_container, MongoDBRepository
-
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,6 @@ class CreateChatRoomView(APIView):
     View for creating a new chat room between a startup and an investor.
     """
 
-    @ratelimit(key='ip', rate='10/m', method='POST', block=True)
     def post(self, request):
         try:
             serializer = ChatRoomSerializer(data=request.data, context={'mongo_repo': mongo_repo})
@@ -48,21 +46,17 @@ class SendMessageView(APIView):
     """
     permission_classes = (IsOwnerOrRecipient,)
 
-    @ratelimit(key='ip', rate='20/m', method='POST', block=True)
     def post(self, request, room_id):
         try:
             logger.info(f"SendMessageView POST request received for room_id: {room_id}")
 
-            request_data = request.data.copy()
-            request_data['room_id'] = room_id
-            if 'sender_id' not in request_data:
+            if 'sender_id' not in request.data:
                 logger.error("sender_id is required in the request data")
                 return Response({'error': 'sender_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            serializer = MessageSerializer(data=request_data, context={'mongo_repo': mongo_repo})
+            serializer = MessageSerializer(data=request.data, context={'mongo_repo': mongo_repo, 'room_id': room_id})
             if serializer.is_valid():
                 message = serializer.save()
-                mongo_repo.add_message(room_id, message)
                 logger.info(f"Message sent with ID: {message.oid} in room: {room_id}")
                 return Response({'message_id': str(message.oid)}, status=status.HTTP_201_CREATED)
 
@@ -83,7 +77,6 @@ class ListMessagesView(APIView):
     """
     permission_classes = (IsOwnerOrRecipient,)
 
-    @ratelimit(key='ip', rate='10/m', method='GET', block=True)
     def get(self, request, room_id):
         try:
             logger.info(f"ListMessagesView GET request received for room_id: {room_id}")
