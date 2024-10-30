@@ -16,8 +16,7 @@ from django.utils import timezone
 
 from common.validators.image_validator import ImageValidator
 
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger('users')
 
 class CustomUserManager(BaseUserManager):
     """Custom user manager for the User model."""
@@ -37,7 +36,9 @@ class CustomUserManager(BaseUserManager):
         Raises:
             ValueError: If email is not provided or password is invalid.
         """
+        logger.debug(f"Attempting to create user with email: {email}")
         if not email:
+            logger.error("Attempt to create user without email")
             raise ValueError('The Email field must be set')
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
@@ -47,11 +48,19 @@ class CustomUserManager(BaseUserManager):
                 validate_password(password)
                 user.set_password(password)
             except ValidationError as e:
+                logger.exception(f"Invalid password for user {email}")
                 raise ValueError(f"Invalid password: {', '.join(e.messages)}")
         else:
+            logger.error(f"Attempt to create user {email} without password")
             raise ValueError('Password must be provided')
-        user.save(using=self._db)
-        logger.info(f"New user created: {email}")
+
+        try:
+            user.save(using=self._db)
+            logger.info("New user created", extra={'email': email, 'roles': extra_fields.get('roles', [])})
+        except Exception as e:
+            logger.exception(f"Failed to save user {email}: {e}")
+            raise
+
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
@@ -65,14 +74,27 @@ class CustomUserManager(BaseUserManager):
 
         Returns:
             User: Newly created superuser instance.
+
+        Raises:
+            ValueError: If the password is not provided.
         """
+        logger.debug(f"Attempting to create superuser with email: {email}")
+
+        if not password:
+            logger.error("Password must be provided for superuser creation.")
+            raise ValueError("The password must be set.")
+
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
-        user = self.create_user(email, password, **extra_fields)
-        logger.info(f"New superuser created: {email}")
-        return user
 
+        try:
+            user = self.create_user(email, password, **extra_fields)
+            logger.info("New superuser created", extra={'email': email})
+            return user
+        except Exception as e:
+            logger.error(f"Failed to create superuser: {e}")
+            raise
 
 class Role(models.Model):
     """Model to represent user roles."""
@@ -80,7 +102,6 @@ class Role(models.Model):
 
     def __str__(self):
         return self.name
-
 
 class User(AbstractBaseUser, PermissionsMixin):
     """
@@ -153,16 +174,23 @@ class User(AbstractBaseUser, PermissionsMixin):
         Raises:
             ValidationError: If the role is invalid or already assigned.
         """
+        logger.debug(f"Attempting to add role '{role_name}' to user {self.email}")
         if role_name not in self.ALLOWED_ROLES:
+            logger.warning(f"Attempt to add invalid role '{role_name}' to user {self.email}")
             raise ValidationError(f"Cannot add role: {role_name}")
         if not self.is_active or self.is_soft_deleted:
+            logger.warning(f"Attempt to add role to inactive or deleted user {self.email}")
             raise ValidationError("This account is not active or is deleted.")
 
         role, created = Role.objects.get_or_create(name=role_name)
         if not self.roles.filter(pk=role.pk).exists():
             self.roles.add(role)
-            self.save()
-            logger.info(f"Role '{role_name}' added to user {self.email}")
+            try:
+                self.save()
+                logger.info(f"Role '{role_name}' added to user {self.email}")
+            except Exception as e:
+                logger.exception(f"Failed to save user {self.email} after adding role '{role_name}': {e}")
+                raise
             if hasattr(self, '_cached_roles'):
                 del self._cached_roles
         else:
@@ -178,15 +206,22 @@ class User(AbstractBaseUser, PermissionsMixin):
         Raises:
             ValidationError: If the role is invalid or not assigned.
         """
+        logger.debug(f"Attempting to remove role '{role_name}' from user {self.email}")
         if role_name not in self.ALLOWED_ROLES:
+            logger.warning(f"Attempt to remove invalid role '{role_name}' from user {self.email}")
             raise ValidationError(f"Cannot remove role: {role_name}")
         if not self.is_active or self.is_soft_deleted:
+            logger.warning(f"Attempt to remove role from inactive or deleted user {self.email}")
             raise ValidationError("This account is not active or is deleted.")
         role = self.roles.filter(name=role_name).first()
         if role:
             self.roles.remove(role)
-            self.save()
-            logger.info(f"Role '{role_name}' removed from user {self.email}")
+            try:
+                self.save()
+                logger.info(f"Role '{role_name}' removed from user {self.email}")
+            except Exception as e:
+                logger.exception(f"Failed to save user {self.email} after removing role '{role_name}': {e}")
+                raise
             if hasattr(self, '_cached_roles'):
                 del self._cached_roles
         else:
@@ -203,6 +238,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             bool: True if the user has the role, False otherwise.
         """
         if role_name not in self.ALLOWED_ROLES:
+            logger.warning(f"Attempt to check for invalid role '{role_name}' for user {self.email}")
             raise ValidationError(f"Role '{role_name}' is not allowed.")
         return self.roles.filter(name=role_name).exists()
 
@@ -225,6 +261,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             ValidationError: If the account is already inactive or deleted.
         """
         if not self.is_active or self.is_soft_deleted:
+            logger.warning(f"Attempt to soft delete an already inactive or deleted user {self.email}")
             raise ValidationError("This account is already inactive or deleted.")
 
         original_data = {
@@ -245,8 +282,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.is_active = False
         self.is_soft_deleted = True
         self.deleted_at = timezone.now()
-        self.save()
-        logger.info(f"User {self.id} soft deleted")
+
+        try:
+            self.save()
+            logger.info(f"User {self.id} soft deleted")
+        except Exception as e:
+            logger.exception(f"Failed to save soft deleted user {self.email}: {e}")
+            raise
 
     def reactivate(self):
         """
@@ -258,6 +300,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             ValidationError: If the account is already active or not soft deleted.
         """
         if self.is_active or not self.is_soft_deleted:
+            logger.warning(f"Attempt to reactivate an already active user {self.email}")
             raise ValidationError("This account is already active or not soft deleted.")
 
         if self.original_data:
@@ -272,8 +315,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.is_active = True
         self.is_soft_deleted = False
         self.deleted_at = None
-        self.save()
-        logger.info(f"User {self.id} reactivated")
+
+        try:
+            self.save()
+            logger.info(f"User {self.id} reactivated")
+        except Exception as e:
+            logger.exception(f"Failed to save reactivated user {self.email}: {e}")
+            raise
 
     def save(self, *args, **kwargs):
         """
@@ -289,6 +337,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.email = self.email.lower().strip()
 
         if User.objects.filter(email=self.email).exclude(pk=self.pk).exists():
+            logger.warning(f"Attempt to save user with duplicate email {self.email}")
             raise ValidationError("Email already exists.")
 
         super().save(*args, **kwargs)
@@ -298,3 +347,4 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name = 'User'
         verbose_name_plural = 'Users'
         default_manager_name = 'objects'
+

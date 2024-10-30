@@ -1,3 +1,4 @@
+import logging
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
@@ -14,6 +15,9 @@ from .serializers import InvestmentTrackingSerializerCreate, ListInvestmentTrack
 def get_investor_profile(request):
     return get_object_or_404(InvestorProfile, user=request.user)
 
+logger = logging.getLogger('django')
+
+
 class InvestmentTrackingSaveView(APIView):
     """
     API view to save StartUps that are of interest to Investors
@@ -24,7 +28,17 @@ class InvestmentTrackingSaveView(APIView):
         investor_profile = get_investor_profile(request)
         startup = get_object_or_404(StartUpProfile, id=startup_id)
 
+        logger.debug(f"Received POST request to save Startup with ID: {startup_id} for user: {request.user}")
+
+        investor_profile = get_object_or_404(InvestorProfile, user=request.user)
+        logger.debug(f"Investor profile found: {investor_profile}")
+
+        startup = get_object_or_404(StartUpProfile, id=startup_id)
+        logger.debug(f"Startup profile found: {startup}")
+
+
         serializer = InvestmentTrackingSerializerCreate(data={'investor': investor_profile.id, 'startup': startup.id})
+
         if serializer.is_valid():
             try:
                 investment_tracking = InvestmentTracking(investor=investor_profile, startup=startup)
@@ -63,3 +77,12 @@ class InvestmentTrackingUnsaveView(APIView):
         investment_tracking = get_object_or_404(InvestmentTracking, investor=investor_profile, startup=startup)
         investment_tracking.delete()
         return Response({"message": "StartUp has been successfully unsaved."}, status=status.HTTP_204_NO_CONTENT)
+                logger.debug(f"InvestmentTracking object created: {investment_tracking}")
+                return Response({"message": "StartUp has been successfully saved."}, status=status.HTTP_201_CREATED)
+            except IntegrityError:
+                logger.warning(
+                    f"Attempt to save Startup that is already saved for Investor: {investor_profile}, Startup: {startup}")
+                return Response({"message": "Startup is already saved."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            logger.error(f"Serializer validation failed: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

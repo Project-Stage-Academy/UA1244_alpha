@@ -12,8 +12,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 from datetime import timedelta
-
 from dotenv import load_dotenv
+from .utils.logging_utils import JsonFormatter
 
 load_dotenv()
 
@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'investment_tracking',
     'communications',
     'dashboard',
+    'notifications',
     'common',
 
     'djoser',
@@ -60,6 +61,8 @@ INSTALLED_APPS = [
     'django_filters',
     'simple_history',
     'channels',
+    'drf_yasg',
+
 ]
 
 MIDDLEWARE = [
@@ -187,14 +190,14 @@ else:
         },
     }
 
-LOGGING_CONFIG = None
+# LOGGING_CONFIG = None
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        'json': {
+            '()': JsonFormatter,
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
@@ -206,15 +209,22 @@ LOGGING = {
             'formatter': 'simple'
         },
         'file': {
-            'class': 'logging.FileHandler',
-            'filename': 'logs/debug.log',
-            'formatter': 'verbose'
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs/debug.log'),
+            'when': 'midnight',
+            'backupCount': 7,
+            'formatter': 'json'
         },
     },
     'loggers': {
         'django': {
             'handlers': ['console', 'file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'users': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
             'propagate': True,
         },
     },
@@ -271,6 +281,18 @@ DJOSER = {
 }
 
 
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+
+}
+
 AUTH_USER_MODEL = 'users.User'
 
 
@@ -279,3 +301,17 @@ CELERY_ACCEPT_CONTENT = os.getenv('CELERY_ACCEPT_CONTENT', 'json').split(',')
 CELERY_TASK_SERIALIZER = os.getenv('CELERY_TASK_SERIALIZER', 'json')
 CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
 CELERY_RESULT_SERIALIZER = os.getenv('CELERY_RESULT_SERIALIZER', 'json')
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_PORT = os.getenv('EMAIL_PORT')
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+TEST_EMAIL_1 = os.getenv('TEST_EMAIL_1')
+TEST_EMAIL_2 = os.getenv('TEST_EMAIL_2')
+
+SITE_URL = os.getenv('SITE_URL')

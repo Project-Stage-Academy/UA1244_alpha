@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 from djoser.views import UserViewSet
-from users.views import CustomTokenObtainPairView, UserProfileView, CustomUserViewSet
+from users.views import CustomTokenObtainPairView, UserProfileView, CustomUserViewSet, LogoutView
 
 urlpatterns = [
     path('auth/jwt/create/', CustomTokenObtainPairView.as_view(), name='token-create'),  # Login
@@ -15,4 +15,5 @@ urlpatterns = [
     path('auth/users/activation/', UserViewSet.as_view({'post': 'activation'}), name='user-activation'),    # Account activation
     path('auth/users/resend_activation/', UserViewSet.as_view({'post': 'resend_activation'}), name='resend-activation'),  # Resending activation
     path('auth/users/profile/', UserProfileView.as_view(), name='user-profile'),
+    path('auth/logout/', LogoutView.as_view(), name='logout-user'),
 ]

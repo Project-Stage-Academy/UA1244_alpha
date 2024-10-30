@@ -15,6 +15,6 @@ if [[ "$DJANGO_ENV" = "PRODUCTION" ]]; then
     --workers $(echo "$WEB_CONCURRENCY" | sed 's/[^0-9]//g') \
     --access-logfile - forum.wsgi:application
 else
-  python manage.py initadmin
   python manage.py runserver 0.0.0.0:8000
+  python manage.py initadmin
 fi
