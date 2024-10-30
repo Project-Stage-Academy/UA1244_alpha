@@ -1,12 +1,24 @@
+from ast import Pass
 import logging
+from sqlite3 import IntegrityError
 from celery import shared_task
+from smtplib import SMTPException
 
 from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
+from django.forms import ValidationError
 from django.utils import timezone
 
 from forum.settings import DEFAULT_FROM_EMAIL
-from .models import Notification, NotificationType
+from users.models import Role
+from investors.models import InvestorProfile
+from startups.models import StartUpProfile
+from .models import (
+    Notification,
+    NotificationType,
+    NotificationPreferences,
+    RolesNotifications
+)
 
 
 User = get_user_model()
@@ -23,8 +35,8 @@ def create_notification(investor_id, startup_id, type_, message_id=None):
             startup_id=startup_id,
             message_id=message_id
         )
-    except Exception as e:
-        print(e)
+    except (ValidationError, IntegrityError) as e:
+        logger.error(f'Error occured while creating notification\n{e}')
 
 @shared_task(bind=True, max_retries=3)
 def send_notification_email(self, notification_id):
@@ -35,8 +47,8 @@ def send_notification_email(self, notification_id):
     """
     notification = Notification.objects.get(id=notification_id)
     associated_profile_url = notification.get_associated_profile_url()
-    startup = notification.startup.user_id
-    investor = notification.investor.user
+    startup = notification.startup.get_user_id()
+    investor = notification.investor.get_user_id()
 
     match notification.notification_type:
         case NotificationType.FOLLOW:
@@ -64,8 +76,8 @@ def send_notification_email(self, notification_id):
         notification.sent_at = timezone.now()
         notification.save()
 
-    except Exception as e:
-        logger.error('Error when sending notification email: {e}')
+    except SMTPException as e:
+        logger.error(f'Error when sending notification email: {e}')
         try:
             raise self.retry(exc=e, countdown=30)
         except self.MaxRetriesExceededError:
@@ -90,3 +102,24 @@ def render_email_html_message(recipient, message, profile_url, profile_type):
     <p>Thank you for choosing Forum!</p>
     '''
     return html_message
+
+
+@shared_task
+def set_initial_notification_settings(instance_id, role_name):
+    try:
+        role = Role.objects.get(name=role_name)
+        if role_name == 'Startup':
+            instance = StartUpProfile.objects.get(id=instance_id)
+        elif role_name == 'Investor':
+            instance = InvestorProfile.objects.get(id=instance_id)
+    except (Role.DoesNotExist, InvestorProfile.DoesNotExist, StartUpProfile.DoesNotExist) as e:
+        logger.error(f'{e}\nCreated {role_name} instance not found: {instance_id}')
+    
+    allowed_notifications = RolesNotifications.objects.filter(role=role)
+
+    for notification in allowed_notifications:
+        NotificationPreferences.objects.get_or_create(
+            user=instance.user_id,
+            role=role,
+            notification_type=notification.notification_type
+        )

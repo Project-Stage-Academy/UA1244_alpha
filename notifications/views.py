@@ -1,17 +1,35 @@
+import logging
+from django.forms import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
+from django.contrib.auth import get_user_model
 
 from rest_framework import generics, filters, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import NotFound
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import Notification, NotificationStatus
-from .serializers import NotificationSerializer, ExtendedNotificationSerializer
+from users.models import Role
+from .models import (
+    Notification,
+    NotificationStatus,
+    NotificationPreferences,
+    RolesNotifications
+)
+from .serializers import (
+    NotificationSerializer,
+    ExtendedNotificationSerializer,
+    NotificationPreferencesSerializer,
+    RolesNotificationsSerializer
+)
 from .filters import NotificationFilter
 
+
+User = get_user_model()
+logger = logging.getLogger('__name__')
 
 class NotificationListView(generics.ListAPIView):
     """API view for all Notifications
@@ -139,3 +157,85 @@ class NotificiationByIDView(generics.RetrieveDestroyAPIView):
         )
     def delete(self, request, *args, **kwargs):
         return super().delete(request, *args, **kwargs)
+    
+
+class RolesNotificationsListCreateView(generics.ListCreateAPIView):
+    """API view to GET and CREATE (assign) notification types to roles"""
+    queryset = RolesNotifications.objects.all()
+    serializer_class = RolesNotificationsSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class RoleNotificationsByIDView(generics.RetrieveDestroyAPIView):
+    """API view to GET and DELETE role-notification pairs by id"""
+    queryset = RolesNotifications.objects.all()
+    serializer_class = RolesNotificationsSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class ProfileNotificationSettingsView(generics.ListAPIView):
+    queryset = NotificationPreferences.objects.all()
+    serializer_class = NotificationPreferencesSerializer
+    permission_classes = [IsAuthenticated]    
+
+    def get_role(self):
+        role = None
+        try:
+            if 'startup' in self.request.path:
+                role = Role.objects.get(name='Startup')
+            elif 'investor' in self.request.path:
+                role = Role.objects.get(name='Startup')
+        except Role.DoesNotExist:
+            raise NotFound('Role not found')
+        return role
+
+    def get_queryset(self):
+        role = self.get_role()
+        user_id = self.kwargs.get('pk')
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist as e:
+            logger.error(e)
+        else:
+            return NotificationPreferences.objects.filter(
+                user=user.id,
+                role=role
+            )
+    
+class ProfileNotificationSettingsByIDView(generics.RetrieveUpdateAPIView):
+    queryset = NotificationPreferences.objects.all()
+    serializer_class = NotificationPreferencesSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def update(self, request, *args, **kwargs):
+        notification_type = self.kwargs.get('notification_type')
+        notification_preference = self.get_object()
+        if notification_preference.check_notification_type(notification_type):
+            serializer = self.get_serializer(notification_preference, request.data)
+            try:
+                serializer.is_valid()
+                self.perform_update(serializer)
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_200_OK
+                )
+            except ValidationError as e:
+                return Response(
+                    {
+                        'message': 'Validation error',
+                        'details': e.details
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            return Response(
+                {
+                    'message': 'Invalid notification type for this role',
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class NotificationPreferencesListView(generics.ListAPIView):
+    queryset = NotificationPreferences.objects.all()
+    serializer_class = NotificationPreferencesSerializer

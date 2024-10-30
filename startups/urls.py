@@ -6,6 +6,10 @@ from startups.views import (
     StartUpProfileUpdate,
     StartUpProfileViewById,
 )
+from notifications.views import (
+    ProfileNotificationSettingsView,
+    ProfileNotificationSettingsByIDView
+)
 
 
 urlpatterns = [
@@ -13,4 +17,12 @@ urlpatterns = [
     path('create', StartUpProfileCreate.as_view(), name='startup-create'),
     path('startups/<int:pk>/', StartUpProfileUpdate.as_view(), name='startup-update'),
     path('startup-profile/<int:pk>/', StartUpProfileViewById.as_view(), name='startup-profile-by-id'),
+    path('startup/<int:pk>/notifications-settings/',
+         ProfileNotificationSettingsView.as_view(), 
+         name='startup-notification-settings'
+    ),
+    path('startup/<int:pk>/notifications-settings/<int:notification_type>/',
+         ProfileNotificationSettingsByIDView.as_view(), 
+         name='startup-notification-settings-by-id'
+    ),
 ]

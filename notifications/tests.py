@@ -2,7 +2,7 @@ from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
 from django.core import mail
 
-from Forum.settings import TEST_EMAIL_1, TEST_EMAIL_2
+from forum.settings import TEST_EMAIL_1, TEST_EMAIL_2
 from investors.models import InvestorProfile
 from startups.models import StartUpProfile
 from investment_tracking.models import InvestmentTracking
