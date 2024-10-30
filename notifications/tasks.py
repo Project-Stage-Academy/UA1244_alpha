@@ -47,8 +47,8 @@ def send_notification_email(self, notification_id):
     """
     notification = Notification.objects.get(id=notification_id)
     associated_profile_url = notification.get_associated_profile_url()
-    startup = notification.startup.user_id
-    investor = notification.investor.user
+    startup = notification.startup.get_user_id()
+    investor = notification.investor.get_user_id()
 
     match notification.notification_type:
         case NotificationType.FOLLOW:
