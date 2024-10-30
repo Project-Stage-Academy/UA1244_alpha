@@ -163,20 +163,20 @@ class RolesNotificationsListCreateView(generics.ListCreateAPIView):
     """API view to GET and CREATE (assign) notification types to roles"""
     queryset = RolesNotifications.objects.all()
     serializer_class = RolesNotificationsSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
 
 class RoleNotificationsByIDView(generics.RetrieveDestroyAPIView):
     """API view to GET and DELETE role-notification pairs by id"""
     queryset = RolesNotifications.objects.all()
     serializer_class = RolesNotificationsSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
 
 class ProfileNotificationSettingsView(generics.ListAPIView):
     queryset = NotificationPreferences.objects.all()
     serializer_class = NotificationPreferencesSerializer
-    # permission_classes = [IsAuthenticated]    
+    permission_classes = [IsAuthenticated]    
 
     def get_role(self):
         role = None
@@ -205,7 +205,7 @@ class ProfileNotificationSettingsView(generics.ListAPIView):
 class ProfileNotificationSettingsByIDView(generics.RetrieveUpdateAPIView):
     queryset = NotificationPreferences.objects.all()
     serializer_class = NotificationPreferencesSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def update(self, request, *args, **kwargs):
         notification_type = self.kwargs.get('notification_type')

@@ -11,6 +11,7 @@ from forum.settings import SITE_URL
 from startups.models import StartUpProfile
 from investors.models import InvestorProfile
 from users.models import Role
+from communications.entities.messages import Message
 
 
 User = get_user_model()
@@ -113,6 +114,59 @@ class Notification(models.Model):
                 pass
 
         return associated_url
+    
+    def get_message_participants(self):
+        try:
+            message = Message.objects.get(id=self.message_id)
+        except message.DoesNotExist:
+            logger.error(f'Message object with this id not found: {self.message_id}')
+    
+    def get_role_profile(self, role):
+        """get startup or investor fields by role name"""
+        profile_fields = {
+            'Investor': 'investor',
+            'Startup': 'startup'
+        }
+        profile = profile_fields.get(role)
+        if role:
+            return getattr(self, profile, None)
+        else:
+            raise AttributeError(f'No attribute found for this role: {role}')
+        
+    def get_notification_preferences(self):
+        """check email and in_app preferences for a notification"""
+        notification_preferences = {
+            'email': True,
+            'in_app': True
+        }
+        try:
+            roles = RolesNotifications.objects.filter(
+                notification_type = self.notification_type)
+            role_id = roles[0]
+            # if len(roles) == 1 else ...
+
+            role = Role.objects.get(id=role_id)
+            receiver_profile = self.get_role_profile(role.name)
+
+            preferences = NotificationPreferences.get(
+                user_id=receiver_profile.get_user_id(),
+                role=role,
+                notification_type=self.notification_type,
+            )
+
+        except (Notification.DoesNotExist, RolesNotifications.DoesNotExist,
+                Role.DoesNotExist) as e:
+            logger.error(f'Notification or Role Notification or Role object not found\n{e}')
+        except AttributeError as e:
+            logger.error(e)
+
+        else:
+            notification_preferences = {
+                'email': preferences.email,
+                'in_app': preferences.in_app
+            }
+
+        return notification_preferences
 
 
 class RolesNotifications(models.Model):
@@ -133,7 +187,6 @@ class RolesNotifications(models.Model):
         unique_together = ['role', 'notification_type']
             
 
-    
 class NotificationPreferences(models.Model):
     """Notification Preferences model
     

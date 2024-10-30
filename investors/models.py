@@ -27,6 +27,9 @@ class InvestorProfile(models.Model):
 
     def __str__(self) -> str:
         return f"ID: {self.user.id}, Email: {self.user.email}, Stage: {self.get_preferred_stage_display()}"
+    
+    def get_user_id(self):
+        return self.user
 
     class Meta:
         verbose_name = 'Investor Profile'
