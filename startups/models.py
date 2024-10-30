@@ -1,9 +1,12 @@
+import logging
+
 from django.contrib.auth import get_user_model
 from django.db import models
 
 from common.validators.image_validator import ImageValidator
 
 User = get_user_model()
+logger = logging.getLogger('django')
 
 
 class StartUpProfile(models.Model):
@@ -19,6 +22,18 @@ class StartUpProfile(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            logger.info(f"Updating StartupProfile: {self.name} (ID: {self.pk})")
+        else:
+            logger.info(f"Creating StartupProfile: {self.name}")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        logger.info(f"Deleting StartupProfile: {self.name} (ID: {self.pk})")
+        super().delete(*args, **kwargs)
+
 
     class Meta:
         verbose_name = "Startup Profile"

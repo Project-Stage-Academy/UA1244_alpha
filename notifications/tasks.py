@@ -54,7 +54,7 @@ def send_notification_email(self, notification_id):
                 recipient, message, associated_profile_url, 'startup')
 
         case NotificationType.MESSAGE:
-            pass
+            return
 
     try:
         recipient_email = str(recipient)
