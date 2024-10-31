@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from investors.models import InvestorProfile
 from .serializers import InvestmentTrackingSerializerCreate
 
+
 class InvestmentTrackingSaveView(APIView):
     """
     API view to save StartUps that are of interest to Investors

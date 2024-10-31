@@ -1,9 +1,12 @@
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Optional
 
 from communications.domain.entities.base import BaseEntity
 from communications.domain.values.messages import Title, Text
+
+logger = logging.getLogger('django')
 
 
 @dataclass
@@ -16,6 +19,7 @@ class Message(BaseEntity):
     def mark_as_read(self):
         """Mark the message as read by setting the read_at timestamp."""
         self.read_at = datetime.now()
+        logger.info(f"Message {self.oid} marked as read at {self.read_at}")
 
 
 @dataclass
@@ -38,3 +42,4 @@ class ChatRoom(BaseEntity):
     def add_message(self, message: Message):
         """Add a new message to the room."""
         self.messages.append(message)
+        logger.info(f"Message {message.oid} added to ChatRoom {self.title}")

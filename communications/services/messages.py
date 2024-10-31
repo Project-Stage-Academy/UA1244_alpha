@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from asgiref.sync import sync_to_async
+
 from communications import BaseEvent
 from communications.domain.entities.messages import ChatRoom, Message
 from communications.repositories.base import BaseRepository
@@ -18,6 +20,6 @@ class CreateMessageCommand:
     mongo_repo: BaseRepository
     messege_event: BaseEvent
 
-    async def handle(self, room_name: str, message: Message):
-        self.mongo_repo.add_message(room_name, message)
+    async def handle(self, room_oid: str, message: Message):
+        self.mongo_repo.add_message(room_oid, message)
         self.messege_event.trigger(message=message)

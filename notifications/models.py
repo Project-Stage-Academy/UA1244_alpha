@@ -1,6 +1,9 @@
 from django.db import models
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 
+from forum.settings import SITE_URL
 from startups.models import StartUpProfile
 from investors.models import InvestorProfile
 
@@ -69,10 +72,17 @@ class Notification(models.Model):
         return f'{type_}: {self.investor} -> {self.startup}' \
             + f' {self.sent_at if self.sent_at else ""}'
 
-    def set_read_status(self):
-        """Set notification status to READ"""
-        self.status = NotificationStatus.READ
+    def set_read_status(self, read):
+        """Set notification status to READ or UNREAD"""
+        self.status = NotificationStatus.READ if read else NotificationStatus.UNREAD
         self.save()
+
+    def set_read_at(self, clear_=False):
+        """Set read_at to timezone.now() or None"""
+        if clear_:
+            self.read_at = None
+        else:
+            self.read_at = timezone.now()
 
     def update_delivery_status(self, sent=True):
         """Set notification delivery status to SENT or FAILED"""
@@ -80,3 +90,20 @@ class Notification(models.Model):
                   NotificationDeliveryStatus.SENT)[sent]
         self.delivery_status = status
         self.save()
+
+    def get_associated_profile_url(self):
+        """Get URL to associated profile depending on notification type"""
+        startup = self.startup.user_id
+        startupt_url = f'{SITE_URL}{reverse("startup-profile-by-id", args=[startup.id])}'
+        investor = self.investor.user
+        investor_url = f'{SITE_URL}{reverse("investor-profile-by-id", args=[investor.id])}'
+
+        match self.notification_type:
+            case NotificationType.FOLLOW:
+                associated_url = investor_url
+            case NotificationType.UPDATE:
+                associated_url = startupt_url
+            case NotificationType.MESSAGE:
+                pass
+
+        return associated_url

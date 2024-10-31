@@ -13,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.room_name = self.scope['url_route']['kwargs']['room_name']
-        self.room_group_name = f"chat_{self.room_name}"
-        logger.info(f"Attempting to connect to room: {self.room_name}")
+        self.room_oid = self.scope['url_route']['kwargs']['room_oid']
+        self.room_group_name = f"chat_{self.room_oid}"
+        logger.info(f"Attempting to connect to room: {self.room_oid}")
 
         await self.channel_layer.group_add(
             self.room_group_name,
@@ -23,10 +23,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
         await self.accept()
-        logger.info(f"Connection accepted for room: {self.room_name}")
+        logger.info(f"Connection accepted for room: {self.room_oid}")
 
     async def disconnect(self, close_code):
-        logger.info(f"Disconnecting from room: {self.room_name} with code: {close_code}")
+        logger.info(f"Disconnecting from room: {self.room_oid} with code: {close_code}")
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
@@ -40,13 +40,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
             sender_id = text_data_json['sender_id']
             receiver_id = text_data_json['receiver_id']
 
-            logger.info(f"Message from sender: {sender_id} to receiver: {receiver_id} in room: {self.room_name}")
+            logger.info(f"Message from sender: {sender_id} to receiver: {receiver_id} in room: {self.room_oid}")
 
             container = init_container()
             message_command = container.resolve(CreateMessageCommand)
             await message_command.handle(
                 message=Message(sender_id=sender_id, receiver_id=receiver_id, content=Text(value=message)),
-                room_name=self.room_name
+                room_oid=self.room_oid
             )
 
             await self.channel_layer.group_send(
