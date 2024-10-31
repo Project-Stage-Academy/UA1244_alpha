@@ -66,7 +66,7 @@ def send_notification_email(self, notification_id):
                 recipient, message, associated_profile_url, 'startup')
 
         case NotificationType.MESSAGE:
-            return
+            recipient = notification.get_message_participants().get('receiver_id')
 
     try:
         recipient_email = str(recipient)
