@@ -6,6 +6,8 @@ from .models import (
     Notification,
     NotificationType,
 )
+from startups.models import StartUpProfile
+
 from .tasks import create_notification, send_notification_email
 
 
@@ -24,3 +26,16 @@ def send_notification(sender, instance, created, **kwargs):
     """Send an email when new notification created"""
     if created:
         send_notification_email.delay(notification_id=instance.id)
+
+
+@receiver(post_save, sender=StartUpProfile)
+def create_notification_on_startup_update(sender, instance, **kwargs):
+    """Create notifications for investor when startyp was updated"""
+
+    tracking = InvestmentTracking.objects.filter(startup=instance)
+    for track in tracking:
+        create_notification.delay(
+            investor_id=track.investor.id,
+            startup_id=instance.id,
+            type_=NotificationType.UPDATE
+        )
