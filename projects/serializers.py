@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Project
+from datetime import timedelta
 
 class ProjectSerializerList(serializers.ModelSerializer):
 
@@ -11,7 +12,19 @@ class ProjectSerializerList(serializers.ModelSerializer):
         read_only_fields = '__all__'
 
 
-class CreateProjectSerializer(serializers.ModelSerializer):
+
+class BaseProjectSerializer(serializers.ModelSerializer):
+    """ Base Project Serializer to emulate the validation functions 
+        for creating and updating projects
+    """
+
+    def validate_duration(self, value):
+        if value < timedelta(0):
+            raise serializers.ValidationError("Duration cannot be negative.")
+        return value
+
+
+class CreateProjectSerializer(BaseProjectSerializer):
 
     """Serializer for creaet new Project"""
 
@@ -21,7 +34,7 @@ class CreateProjectSerializer(serializers.ModelSerializer):
                   'amount', 'status', 'duration']
 
 
-class UpdateProjectSerializer(serializers.ModelSerializer):
+class UpdateProjectSerializer(BaseProjectSerializer):
     """Serializer for update new Project"""
 
     class Meta:
