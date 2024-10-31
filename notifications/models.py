@@ -1,7 +1,6 @@
 import logging
 
 from django.db import models
-from django.forms import ValidationError
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
@@ -114,13 +113,13 @@ class Notification(models.Model):
             case NotificationType.UPDATE:
                 associated_url = startupt_url
             case NotificationType.MESSAGE:
-                pass
+                return None
 
         return associated_url
-    
+
     def get_message_participants(self):
-        return mongo_container.get_message_participants(self.message_id)
-    
+        return mongo_container.message_participants(self.message_id)
+
     def get_role_profile(self, role):
         """get startup or investor fields by role name"""
         profile_fields = {
@@ -130,9 +129,8 @@ class Notification(models.Model):
         profile = profile_fields.get(role)
         if role:
             return getattr(self, profile, None)
-        else:
-            raise AttributeError(f'No attribute found for this role: {role}')
-        
+        raise AttributeError(f'No attribute found for this role: {role}')
+
     def get_notification_preferences(self):
         """check email and in_app preferences for a notification"""
 
@@ -140,36 +138,45 @@ class Notification(models.Model):
             'email': True,
             'in_app': True
         }
+        preferences = None
         try:
             roles = RolesNotifications.objects.filter(
                 notification_type=self.notification_type)
-            
+
             if roles.count() > 1 and self.notification_type == NotificationType.MESSAGE:
                 if self.handle_message_preferences():
                     preferences = self.handle_message_preferences()
 
             elif roles.count() == 1:
                 role = roles.first()
-                receiver_profile = self.get_role_profile(role.name)
-                preferences = NotificationPreferences.get(
-                    user_id=receiver_profile.get_user_id(),
-                    role=role,
+                role_name = Role.objects.get(id=role.role_id).name
+                receiver_profile = self.get_role_profile(role_name)
+
+                logger.error(role.role_id, receiver_profile, receiver_profile.get_user(),
+                             Notification.notification_type)
+                preferences = NotificationPreferences.objects.get(
+                    user_id=receiver_profile.get_user(),
+                    role=role.role_id,
                     notification_type=self.notification_type,
                 )
         except (Notification.DoesNotExist, RolesNotifications.DoesNotExist,
-                Role.DoesNotExist) as e:
-            logger.error(f'Notification or Role Notification or Role object not found\n{e}')
+                Role.DoesNotExist, NotificationPreferences.DoesNotExist) as e:
+            logger.error(
+                f'Notification or Role Notification or Role or Preferences object not found\n{e}')
         except AttributeError as e:
             logger.error(f'Invalid role {e}')
-        else:
+
+        if preferences:
             notification_preferences['email'] = preferences.email
             notification_preferences['in_app'] = preferences.in_app
 
         return notification_preferences
-    
+
     def handle_message_preferences(self):
+        """get preferences for message notifications"""
         preferences = None
         participants = self.get_message_participants()
+
         if participants:
             receiver_user_id = participants.get('receiver_id')
 
@@ -189,7 +196,7 @@ class Notification(models.Model):
             except User.DoesNotExist:
                 logger.error(f'User with id {receiver_user_id} not found')
 
-            return preferences
+        return preferences
 
 
 class RolesNotifications(models.Model):
@@ -208,11 +215,11 @@ class RolesNotifications(models.Model):
 
     class Meta:
         unique_together = ['role', 'notification_type']
-            
+
 
 class NotificationPreferences(models.Model):
     """Notification Preferences model
-    
+
     Fields:
     - user (ForeignKey): user id
     - role (ForeignKey): role id
@@ -220,7 +227,7 @@ class NotificationPreferences(models.Model):
     - email (BooleanField): email notifications enabled/disabled, default=True
     - in_app (BooleanField): in-app notifications enabled/disabled, default=True
     """
-    
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
     notification_type = models.IntegerField(choices=NotificationType.choices)
@@ -231,6 +238,7 @@ class NotificationPreferences(models.Model):
         unique_together = ['user', 'role', 'notification_type']
 
     def check_notification_type(self, notification_type):
+        """check is notification type is allowed for profile"""
         allowed = RolesNotifications.objects.filter(
             role=self.role,
             notification_type=notification_type

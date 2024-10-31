@@ -43,5 +43,6 @@ class StartUpProfile(models.Model):
     def __str__(self) -> str:
         return self.name
     
-    def get_user_id(self):
+    def get_user(self):
+        """get user id"""
         return self.user_id

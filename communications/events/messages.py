@@ -13,12 +13,13 @@ logger = logging.getLogger(__name__)
 @dataclass
 class MessageNotificationEvent(BaseEvent):
     async def trigger(self, message: Message):
-        from notifications.models import Notification  
+        from notifications.models import Notification, NotificationType
         try:
             await database_sync_to_async(Notification.objects.create)(
+                notification_type=NotificationType.MESSAGE,
                 investor_id=message.sender_id,
                 startup_id=message.receiver_id,
-                message_id=str(message._id)
+                message_id=message.oid
             )
 
             logger.info(f"Notification object created for message from sender {message.sender_id}")

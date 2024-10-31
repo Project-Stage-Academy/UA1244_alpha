@@ -1,8 +1,4 @@
-from django.forms import ValidationError
 from rest_framework import serializers
-
-from users.models import Role
-from users.serializers import RoleSerializer
 
 from .models import Notification, NotificationPreferences, RolesNotifications, NotificationType
 
@@ -40,9 +36,16 @@ class ExtendedNotificationSerializer(serializers.ModelSerializer):
             'sent_at',
             'read_at'
         ]
-    
+
     def get_associated_profile_url(self, obj):
         return obj.get_associated_profile_url()
+
+
+class NotificationSerializerPost(serializers.ModelSerializer):
+    """Notification Serializer with all editable fields"""
+    class Meta:
+        model = Notification
+        fields = '__all__'
 
 
 class NotificationPreferencesSerializer(serializers.ModelSerializer):
@@ -68,11 +71,10 @@ class RolesNotificationsSerializer(serializers.ModelSerializer):
             return obj.role.name
         except obj.role.DoesNotExist:
             return None
-        
+
     def get_notification_name(self, obj):
         """get notification type name"""
         try:
             return NotificationType(obj.notification_type).label
         except Exception:
             return None
-

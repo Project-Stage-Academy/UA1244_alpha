@@ -97,7 +97,7 @@ class MongoDBRepository(BaseRepository):
         else:
             logger.warning(f"Failed to add message to chatroom ID: {room_id}. Room may not exist.")
 
-    def get_message_participants(self, message_id):
+    def message_participants(self, message_id):
         data = self._collection.find_one({"_id": ObjectId(str(message_id))})
         if data:
             return {
