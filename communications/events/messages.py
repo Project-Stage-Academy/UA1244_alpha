@@ -21,7 +21,7 @@ class MessageNotificationEvent(BaseEvent):
                 message_id=str(message._id)
             )
 
-            logger.info(f"Notification object created for message {message.content}")
+            logger.info(f"Notification object created for message from sender {message.sender_id}")
 
             channel_layer = get_channel_layer()
             await channel_layer.group_send(

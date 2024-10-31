@@ -16,5 +16,6 @@ if [[ "$DJANGO_ENV" = "PRODUCTION" ]]; then
     --access-logfile - forum.wsgi:application
 else
   python manage.py runserver 0.0.0.0:8000
+  sleep 10
   python manage.py initadmin
 fi
