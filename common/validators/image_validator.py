@@ -1,8 +1,12 @@
+import logging
 from collections.abc import Mapping
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.utils.deconstruct import deconstructible
 from PIL import Image
+
+
+logger = logging.getLogger(__name__)
 
 
 @deconstructible
@@ -25,11 +29,6 @@ class ImageValidator:
     def __init__(self, max_size=None, max_width=None, max_height=None, messages=None):
         """
         Initialize the image validator with optional size and dimension limits.
-
-        :param max_size: Maximum file size in bytes
-        :param max_width: Maximum width in pixels
-        :param max_height: Maximum height in pixels
-        :param messages: Custom error messages
         """
         self.max_size = max_size
         self.max_width = max_width
@@ -42,23 +41,25 @@ class ImageValidator:
     def __call__(self, value):
         """
         Validate the uploaded image file by checking its format, dimensions, and size.
-
-        :param value: The uploaded file object to validate.
-        :raises ValidationError: If the file does not meet the validation criteria.
         """
-        image = Image.open(value)
-        if image.format.lower() not in ('jpeg', 'png'):
-            raise ValidationError(
-                self.messages['invalid_image_format'],
-                code='invalid_image_format'
-            )
-
+        logger.debug(f"Validating image: {value.name}")
         try:
-            # Open the image to get its dimensions
             image = Image.open(value)
             image.verify()
+            logger.info(f"Image {value.name} opened successfully. Format: {image.format}")
+
+            if image.format.lower() not in ('jpeg', 'png'):
+                logger.error(f"Invalid image format: {image.format} for file {value.name}")
+                raise ValidationError(
+                    self.messages['invalid_image'],
+                    code='invalid_image_format'
+                )
+
             width, height = image.size
-        except Exception:
+            logger.debug(f"Image dimensions for {value.name}: {width}x{height}")
+
+        except Exception as e:
+            logger.error(f"Failed to process image {value.name}: {str(e)}")
             raise ValidationError(
                 self.messages['invalid_image'],
                 code='invalid_image'
@@ -66,6 +67,7 @@ class ImageValidator:
 
         # Validate file size
         if self.max_size is not None and value.size > self.max_size:
+            logger.warning(f"Image {value.name} exceeds the size limit: {value.size} bytes")
             raise ValidationError(
                 self.messages['size'],
                 code='invalid_size',
@@ -78,23 +80,20 @@ class ImageValidator:
     def _validate_dimensions(self, width, height):
         """
         Validate the dimensions of the image.
-
-        :param width: The width of the image in pixels.
-        :param height: The height of the image in pixels.
-        :raises ValidationError: If the dimensions exceed the allowed limits.
         """
         if self.max_width is not None and width > self.max_width:
+            logger.warning(f"Image width {width} exceeds the max allowed width {self.max_width}")
             self._raise_dimension_error()
 
         if self.max_height is not None and height > self.max_height:
+            logger.warning(f"Image height {height} exceeds the max allowed height {self.max_height}")
             self._raise_dimension_error()
 
     def _raise_dimension_error(self):
         """
         Raise a ValidationError if the image dimensions exceed the allowed limits.
-
-        :raises ValidationError: If the image's width or height exceeds the specified limits.
         """
+        logger.error(f"Image dimensions exceed the allowed limits")
         raise ValidationError(
             self.messages['dimensions'],
             code='invalid_dimensions',
@@ -107,9 +106,6 @@ class ImageValidator:
     def __eq__(self, other):
         """
         Compare two ImageValidator instances for equality.
-
-        :param other: Another ImageValidator instance to compare against.
-        :return: True if the two validators are equal, False otherwise.
         """
         if not isinstance(other, ImageValidator):
             return False

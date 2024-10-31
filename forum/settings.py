@@ -12,8 +12,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 from datetime import timedelta
-
 from dotenv import load_dotenv
+from .utils.logging_utils import JsonFormatter
 
 load_dotenv()
 
@@ -23,6 +23,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
+# Retrieve the encryption key
+ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_ENV', 'PRODUCTION') == 'DEVELOPMENT'
@@ -52,7 +54,6 @@ INSTALLED_APPS = [
     'investment_tracking',
     'communications',
     'dashboard',
-    'commands',
     'notifications',
     'common',
 
@@ -62,6 +63,8 @@ INSTALLED_APPS = [
     'django_filters',
     'simple_history',
     'channels',
+    'drf_yasg',
+
 ]
 
 MIDDLEWARE = [
@@ -189,14 +192,14 @@ else:
         },
     }
 
-LOGGING_CONFIG = None
+# LOGGING_CONFIG = None
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        'json': {
+            '()': JsonFormatter,
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
@@ -208,15 +211,22 @@ LOGGING = {
             'formatter': 'simple'
         },
         'file': {
-            'class': 'logging.FileHandler',
-            'filename': 'logs/debug.log',
-            'formatter': 'verbose'
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs/debug.log'),
+            'when': 'midnight',
+            'backupCount': 7,
+            'formatter': 'json'
         },
     },
     'loggers': {
         'django': {
             'handlers': ['console', 'file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'users': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
             'propagate': True,
         },
     },
@@ -272,6 +282,18 @@ DJOSER = {
     "EMAIL_FRONTEND_SITE_NAME": "forum",
 }
 
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+
+}
 
 AUTH_USER_MODEL = 'users.User'
 

@@ -4,7 +4,7 @@ import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
 from communications import init_container
 from communications.entities.messages import Message
-from communications.services.messages import SendMessageCommand
+from communications.services.messages import CreateMessageCommand
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +41,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             logger.info(f"Message from sender: {sender_id} to receiver: {receiver_id} in room: {self.room_name}")
 
             container = init_container()
-            message_command = container.resolve(SendMessageCommand)
-            message_command.handle(
+            message_command = container.resolve(CreateMessageCommand)
+            await message_command.handle(
                 message=Message(sender_id=sender_id, receiver_id=receiver_id, content=message),
                 room_name=self.room_name
             )
