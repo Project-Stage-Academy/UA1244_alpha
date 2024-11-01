@@ -12,7 +12,6 @@ from rest_framework import generics, filters, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import NotFound
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -197,14 +196,9 @@ class RoleNotificationsByIDView(generics.RetrieveDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
 
-class ProfileNotificationSettingsView(generics.ListAPIView):
-    """API view to GET all Notification Preferences for Profile"""
-    queryset = NotificationPreferences.objects.all()
-    serializer_class = NotificationPreferencesSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_role(self):
-        role = profile = None
+class RoleMixin:
+    def get_user_and_role(self):
+        role = profile = user = None
         try:
             if 'startup' in self.request.path:
                 role = Role.objects.get(name='Startup')
@@ -212,28 +206,53 @@ class ProfileNotificationSettingsView(generics.ListAPIView):
             elif 'investor' in self.request.path:
                 role = Role.objects.get(name='Investor')
                 profile = InvestorProfile.objects.get(id=self.kwargs.get('pk'))
-        except Role.DoesNotExist:
-            raise NotFound('Role not found')
-        return role, profile
+            if role and profile:
+                user_id = profile.get_user().id
+                user = User.objects.get(id=user_id)
+
+        except (Role.DoesNotExist, StartUpProfile.DoesNotExist, 
+                InvestorProfile.DoesNotExist) as e:
+            logger.error(f'Role, Startup or Investor not found: {e}')
+
+        return user, role
+
+class ProfileNotificationSettingsView(RoleMixin, generics.ListAPIView):
+    """API view to GET all Notification Preferences for Profile"""
+    queryset = NotificationPreferences.objects.all()
+    serializer_class = NotificationPreferencesSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        role, profile = self.get_role()
-        user_id = profile.get_user().id
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist as e:
-            logger.error(e)
-            return None
-        return NotificationPreferences.objects.filter(
-            user=user.id,
-            role=role
-        )
+        notification_preferences = None
+        user, role = self.get_user_and_role()
+        if user:
+            notification_preferences = NotificationPreferences.objects.filter(
+                user=user.id,
+                role=role
+            )
+        return notification_preferences
+    
 
-class ProfileNotificationSettingsByIDView(generics.RetrieveUpdateAPIView):
+class ProfileNotificationSettingsByIDView(RoleMixin, generics.RetrieveUpdateAPIView):
     """API View to get specific Notification preference for Profile by ID"""
     queryset = NotificationPreferences.objects.all()
     serializer_class = NotificationPreferencesSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        notification_preference = None
+        user, role = self.get_user_and_role()
+        if user:
+            try:
+                notification_preference = NotificationPreferences.objects.get(
+                    user=user.id,
+                    role=role,
+                    notification_type=self.kwargs.get('notification_type')
+                )
+            except NotificationPreferences.DoesNotExist as e:
+                logger.error(f'NotificationPreferences not found for User {user}, {role}, {e}')
+        return notification_preference
+
 
     def update(self, request, *args, **kwargs):
         notification_type = self.kwargs.get('notification_type')
