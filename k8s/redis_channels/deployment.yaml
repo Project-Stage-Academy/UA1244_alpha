@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-channels
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-channels
+  template:
+    metadata:
+      labels:
+        app: redis-channels
+    spec:
+      containers:
+      - name: redis-channels
+        image: redis:7.2.4-alpine
+        ports:
+        - containerPort: 6379

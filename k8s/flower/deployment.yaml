@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flower
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flower
+  template:
+    metadata:
+      labels:
+        app: flower
+    spec:
+      containers:
+      - name: flower
+        command: ["celery", "-A", "forum.celery.app", "flower"]
+        ports:
+        - containerPort: 5555 # port???
+        envFrom:
+        - configMapRef:
+            name: flower-config
