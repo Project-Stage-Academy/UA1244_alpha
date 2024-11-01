@@ -160,3 +160,23 @@ class UpdateProjectView(generics.UpdateAPIView):
                 {"error": "Invalid data", "details": e.detail},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+
+class ProjectViewById(generics.RetrieveAPIView):
+    """
+    """
+    serializer_class = ProjectSerializerList
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Project.objects.filter(project_id = self.kwargs.get('pk'))
+    
+    def retrive(self, request, *args, **kwargs):
+        try:
+            obj = self.get_object()
+            logger.info(f"Project retrieved successfully: {obj.id}")
+        except Http404 as e:
+            return Response(
+                {"error": "This project doesn't exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )

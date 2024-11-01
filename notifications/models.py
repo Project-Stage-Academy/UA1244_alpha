@@ -6,6 +6,7 @@ from django.utils import timezone
 from forum.settings import SITE_URL
 from startups.models import StartUpProfile
 from investors.models import InvestorProfile
+from projects.models import Project
 
 
 class NotificationType(models.IntegerChoices):
@@ -46,6 +47,7 @@ class Notification(models.Model):
     - status(IntegerField): notification status (unread/read)
     - investor(ForeignKey): associated investor's id
     - startup(ForeignKey): associated startup's id
+    - project(ForeignKey): associated project's id
     - message_id(CharField): associated message id
     - delivery_status(BooleanField): notification delivary status (sent/failed)
     - created_at(DateTimeField)
@@ -58,6 +60,7 @@ class Notification(models.Model):
         choices=NotificationStatus.choices, default=NotificationStatus.UNREAD)
     investor = models.ForeignKey(InvestorProfile, on_delete=models.CASCADE)
     startup = models.ForeignKey(StartUpProfile, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, blank=True, null=True, on_delete=models.CASCADE)
     message_id = models.CharField(max_length=24, blank=True, null=True)
     delivery_status = models.IntegerField(
          choices=NotificationDeliveryStatus, blank=True, null=True)
@@ -67,6 +70,8 @@ class Notification(models.Model):
 
     def __str__(self):
         type_ = NotificationType(self.notification_type).label
+        if self.project:
+            return f'{type_}: {self.investor} -> {self.project} {self.sent_at if self.sent_at else ""}'
         return f'{type_}: {self.investor} -> {self.startup}' \
         + f' {self.sent_at if self.sent_at else ""}'
 
@@ -95,11 +100,16 @@ class Notification(models.Model):
         startupt_url = f'{SITE_URL}{reverse("startup-profile-by-id", args=[startup.id])}'
         investor = self.investor.user
         investor_url = f'{SITE_URL}{reverse("investor-profile-by-id", args=[investor.id])}'
+        if self.project:
+            project = self.project.startup.user_id
+            project_url = f'{SITE_URL}{reverse("project-by-id", args=[project.id])}'
 
         match self.notification_type:
             case NotificationType.FOLLOW:
                 associated_url = investor_url
             case NotificationType.UPDATE:
+                if self.project:
+                    associated_url = project_url
                 associated_url = startupt_url
             case NotificationType.MESSAGE:
                 pass
