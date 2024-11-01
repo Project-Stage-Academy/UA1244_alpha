@@ -1,16 +1,38 @@
-from django_filters.rest_framework import DjangoFilterBackend
-
+from django.shortcuts import render
 from rest_framework import generics, filters, status
+from rest_framework.permissions import IsAuthenticated
+from investors.models import InvestorProfile
+from django.shortcuts import get_object_or_404
+
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
+from .serializers import (
+   NotificationForInvestorSerializersList,
+   NotificationSerializer, 
+   ExtendedNotificationSerializer)
 from .models import Notification, NotificationStatus
-from .serializers import NotificationSerializer, ExtendedNotificationSerializer
 from .filters import NotificationFilter
+
+
+
+
+class InvestorsNotificationsListView(generics.ListAPIView):
+    """API view for get investors notifications"""
+
+    serializer_class = NotificationForInvestorSerializersList
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        investor = get_object_or_404(InvestorProfile, user=self.request.user)
+        return Notification.objects.filter(investor=investor.id).order_by('-created_at')
+
+=======
+
 
 
 class NotificationListView(generics.ListAPIView):
