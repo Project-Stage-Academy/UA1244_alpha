@@ -5,6 +5,6 @@ from .views import (
 
 
 urlpatterns = [
-    path('investor-track-projects/', InvestorsProjectsListView.as_view(), name='project-list'),
+    path('investor-track-projects/', InvestorsProjectsListView.as_view(), name='track-project-list'),
     path('track/<uuid:project_id>/project', TrackProjectFollowView.as_view(), name="project-track"),
 ]
