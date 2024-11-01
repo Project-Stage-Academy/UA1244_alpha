@@ -7,8 +7,9 @@ from pymongo import MongoClient
 from communications.events.base import BaseEvent
 from communications.events.messages import MessageNotificationEvent
 from communications.repositories.mongo import MongoDBRepository
-from communications.services.messages import CreateChatCommand, CreateMessageCommand
-
+from communications.services.commands.messages import CreateChatCommand, CreateMessageCommand
+from communications.services.queries.base import BaseQuery
+from communications.services.queries.messages import ChatRoomQuery, MessageQuery
 
 logger = logging.getLogger('django')
 
@@ -60,5 +61,16 @@ def init_container() -> Container:
             container.resolve(MongoDBRepository),
             container.resolve(BaseEvent)
         ))
+
+    def init_get_chat_room_query() -> BaseQuery:
+        repo = container.resolve(MongoDBRepository)
+        return ChatRoomQuery(mongo_repo=repo)
+
+    container.register(ChatRoomQuery, factory=init_get_chat_room_query)
+
+    def init_get_message_query(repo: MongoDBRepository) -> BaseQuery:
+        return MessageQuery(mongo_repo=repo)
+
+    container.register(MessageQuery, factory=init_get_message_query)
 
     return container

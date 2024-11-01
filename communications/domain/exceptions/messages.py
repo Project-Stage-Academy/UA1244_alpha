@@ -5,7 +5,7 @@ from .base import ApplicationException
 
 @dataclass(eq=False)
 class TitleTooLongException(ApplicationException):
-    text: str
+    text: str = 'Text too long'
 
     @property
     def message(self):

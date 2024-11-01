@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from communications import init_container, MongoDBRepository
+from .domain.exceptions.base import ApplicationException
 from .permissions import IsOwnerOrRecipient
 from .serializers import MessageSerializer, ChatRoomSerializer
 
@@ -32,7 +33,7 @@ class CreateChatRoomView(APIView):
             logger.warning(f"Invalid data for creating chat room: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        except Exception as e:
+        except ApplicationException as e:
             logger.error(f"Failed to create chat room: {e}", exc_info=True)
             return Response(
                 {'error': 'Failed to create chat room due to server error.'},
@@ -63,7 +64,7 @@ class SendMessageView(APIView):
             logger.warning(f"Invalid data for sending message: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        except Exception as e:
+        except ApplicationException as e:
             logger.error(f"Failed to send message in room {room_oid}: {e}", exc_info=True)
             return Response(
                 {'error': 'Failed to send message due to server error.'},
@@ -94,7 +95,7 @@ class ListMessagesView(APIView):
             logger.error(f"Chat room not found for room_oid: {room_oid}")
             return Response({'error': 'Chat room not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        except Exception as e:
+        except ApplicationException as e:
             logger.error(f"Failed to list messages for room {room_oid}: {e}", exc_info=True)
             return Response(
                 {'error': 'Failed to retrieve messages due to server error.'},

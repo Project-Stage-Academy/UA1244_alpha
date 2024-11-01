@@ -33,7 +33,7 @@ class MessageSerializer(serializers.Serializer):
             raise serializers.ValidationError("Database repository not provided in serializer context.")
 
         message = Message(**validated_data)
-        mongo_repo.add_message(room_oid, message)
+        mongo_repo.create_message(room_oid, message)
 
         return message
 
