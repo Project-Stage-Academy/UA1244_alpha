@@ -101,8 +101,8 @@ class Notification(models.Model):
         investor = self.investor.user
         investor_url = f'{SITE_URL}{reverse("investor-profile-by-id", args=[investor.id])}'
         if self.project:
-            project = self.project.startup.user_id
-            project_url = f'{SITE_URL}{reverse("project-by-id", args=[project.id])}'
+            # project = self.project.startup.user_id
+            project_url = f'{SITE_URL}{reverse("project-by-id", args=[self.project.project_id])}' 
 
         match self.notification_type:
             case NotificationType.FOLLOW:
