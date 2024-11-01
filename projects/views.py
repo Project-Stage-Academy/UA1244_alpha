@@ -1,6 +1,6 @@
 import logging
 from django.http import Http404
-# from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 # from rest_framework.pagination import PageNumberPagination
