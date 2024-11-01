@@ -1,5 +1,9 @@
+from rest_framework import generics, filters, status
+from rest_framework.permissions import IsAuthenticated
+from investors.models import InvestorProfile
+from django.shortcuts import get_object_or_404
+
 import logging
-import profile
 from django.forms import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
@@ -27,9 +31,23 @@ from .serializers import (
     ExtendedNotificationSerializer,
     NotificationPreferencesSerializer,
     RolesNotificationsSerializer,
-    NotificationSerializerPost
+    NotificationSerializerPost,
+    NotificationForInvestorSerializersList
 )
 from .filters import NotificationFilter
+
+
+
+
+class InvestorsNotificationsListView(generics.ListAPIView):
+    """API view for get investors notifications"""
+
+    serializer_class = NotificationForInvestorSerializersList
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        investor = get_object_or_404(InvestorProfile, user=self.request.user)
+        return Notification.objects.filter(investor=investor.id).order_by('-created_at')
 
 
 User = get_user_model()
@@ -162,6 +180,7 @@ class NotificiationByIDView(generics.RetrieveDestroyAPIView):
         )
     def delete(self, request, *args, **kwargs):
         return super().delete(request, *args, **kwargs)
+
 
 
 class RolesNotificationsListCreateView(generics.ListCreateAPIView):
