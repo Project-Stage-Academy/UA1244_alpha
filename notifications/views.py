@@ -1,22 +1,20 @@
-from rest_framework import generics, filters, status
-from rest_framework.permissions import IsAuthenticated
-from investors.models import InvestorProfile
-from django.shortcuts import get_object_or_404
-
 import logging
 from django.forms import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 
 from rest_framework import generics, filters, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied, NotFound
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from investors.models import InvestorProfile
+import notifications
 from startups.models import StartUpProfile
 from users.models import Role
 from .models import (
@@ -181,7 +179,6 @@ class NotificiationByIDView(generics.RetrieveDestroyAPIView):
         return super().delete(request, *args, **kwargs)
 
 
-
 class RolesNotificationsListCreateView(generics.ListCreateAPIView):
     """API view to GET and CREATE (assign) notification types to roles"""
     queryset = RolesNotifications.objects.all()
@@ -197,7 +194,7 @@ class RoleNotificationsByIDView(generics.RetrieveDestroyAPIView):
 
 
 class RoleMixin:
-    def get_user_and_role(self):
+    def get_user_role_profile(self):
         role = profile = user = None
         try:
             if 'startup' in self.request.path:
@@ -214,7 +211,11 @@ class RoleMixin:
                 InvestorProfile.DoesNotExist) as e:
             logger.error(f'Role, Startup or Investor not found: {e}')
 
-        return user, role
+        return {
+            'user': user,
+            'role': role,
+            'profile': profile
+            }
 
 class ProfileNotificationSettingsView(RoleMixin, generics.ListAPIView):
     """API view to GET all Notification Preferences for Profile"""
@@ -224,7 +225,9 @@ class ProfileNotificationSettingsView(RoleMixin, generics.ListAPIView):
 
     def get_queryset(self):
         notification_preferences = None
-        user, role = self.get_user_and_role()
+        profile_info = self.get_user_role_profile()
+        user = profile_info['user']
+        role = profile_info['role']
         if user:
             notification_preferences = NotificationPreferences.objects.filter(
                 user=user.id,
@@ -241,7 +244,9 @@ class ProfileNotificationSettingsByIDView(RoleMixin, generics.RetrieveUpdateAPIV
 
     def get_object(self):
         notification_preference = None
-        user, role = self.get_user_and_role()
+        profile_info = self.get_user_role_profile()
+        user = profile_info['user']
+        role = profile_info['role']
         if user:
             try:
                 notification_preference = NotificationPreferences.objects.get(
@@ -276,9 +281,7 @@ class ProfileNotificationSettingsByIDView(RoleMixin, generics.RetrieveUpdateAPIV
                 )
         else:
             return Response(
-                {
-                    'message': 'Invalid notification type for this role',
-                },
+                {'message': 'Invalid notification type for this role'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -287,3 +290,42 @@ class NotificationPreferencesListView(generics.ListAPIView):
     """API View to get all Notification Preferences"""
     queryset = NotificationPreferences.objects.all()
     serializer_class = NotificationPreferencesSerializer
+
+class ProfileNotificationsListView(RoleMixin, generics.ListAPIView):
+    """API View to GET all notifications for current profile"""
+    queryset = Notification
+    serializer_class = ExtendedNotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        profile_id = self.kwargs.get('pk')
+        profile_info = self.get_user_role_profile()
+        user = profile_info['user']
+        role = profile_info['role']
+        profile = profile_info['profile']
+
+        notifications = Notification.objects.none()
+
+        if user and user.id == self.request.user.id:
+            
+            if role and profile:
+                recipient_field = 'investor_id' if isinstance(profile, InvestorProfile)\
+                    else 'startup_id'
+                notifications = Notification.objects.filter(
+                    **{recipient_field: profile_id}
+                )
+                if notifications.exists():
+                    notification_preferences = NotificationPreferences.objects.filter(
+                        user_id=user.id,
+                        role_id=role.id
+                    )
+                    preferences = (
+                        preference.notification_type
+                        for preference in notification_preferences
+                        if preference.in_app == True
+                    )
+                    notifications = notifications.filter(notification_type__in=preferences)
+
+        return notifications
+
+
