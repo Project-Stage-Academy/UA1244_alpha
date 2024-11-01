@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from communications.entities.messages import (
+from communications.domain.entities.messages import (
     ChatRoom,
     Message
 )
+from communications.repositories.filters import GetMessagesFilters
 
 
 class BaseRepository(ABC):
@@ -14,11 +15,15 @@ class BaseRepository(ABC):
         pass
 
     @abstractmethod
-    def get_chatroom(self, room_id: str) -> Optional[ChatRoom]:
-        """Retrieve a chatroom by its room_id. Return None if not found."""
+    def create_message(self, room_oid: str, message: Message) -> None:
+        """Add a message to a chatroom."""
         pass
 
     @abstractmethod
-    def add_message(self, room_id: str, message: Message) -> None:
-        """Add a message to a chatroom."""
+    def get_chatroom(self, room_oid: str) -> Optional[ChatRoom]:
+        """Retrieve a chatroom by its room_oid. Return None if not found."""
         pass
+
+    @abstractmethod
+    def get_messages(self, room_oid: str, filters: GetMessagesFilters) -> list[Message]:
+        ...

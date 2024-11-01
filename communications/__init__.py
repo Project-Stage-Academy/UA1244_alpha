@@ -7,10 +7,12 @@ from pymongo import MongoClient
 from communications.events.base import BaseEvent
 from communications.events.messages import MessageNotificationEvent
 from communications.repositories.mongo import MongoDBRepository
-from communications.services.messages import CreateChatCommand, CreateMessageCommand
-
+from communications.services.commands.messages import CreateChatCommand, CreateMessageCommand
+from communications.services.queries.base import BaseQuery
+from communications.services.queries.messages import ChatRoomQuery, MessageQuery
 
 logger = logging.getLogger('django')
+
 
 @lru_cache(1)
 def init_container() -> Container:
@@ -38,10 +40,8 @@ def init_container() -> Container:
             logger.error(f"Failed to initialize MongoDBRepository: {e}")
             raise
 
-
     def init_create_chat_command(repo: MongoDBRepository) -> CreateChatCommand:
         return CreateChatCommand(mongo_repo=repo)
-
 
     def init_send_message_command(repo: MongoDBRepository, notification: BaseEvent) -> CreateMessageCommand:
         return CreateMessageCommand(mongo_repo=repo, messege_event=notification)
@@ -51,12 +51,26 @@ def init_container() -> Container:
     container.register(MongoClient, factory=init_mongo_client)
     container.register(MongoDBRepository, factory=init_mongo_repository)
 
-    container.register(CreateChatCommand, factory=lambda: init_create_chat_command(container.resolve(MongoDBRepository)))
+    container.register(
+        CreateChatCommand,
+        factory=lambda: init_create_chat_command(container.resolve(MongoDBRepository))
+    )
     container.register(
         CreateMessageCommand,
         factory=lambda: init_send_message_command(
             container.resolve(MongoDBRepository),
             container.resolve(BaseEvent)
-    ))
+        ))
+
+    def init_get_chat_room_query() -> BaseQuery:
+        repo = container.resolve(MongoDBRepository)
+        return ChatRoomQuery(mongo_repo=repo)
+
+    container.register(ChatRoomQuery, factory=init_get_chat_room_query)
+
+    def init_get_message_query(repo: MongoDBRepository) -> BaseQuery:
+        return MessageQuery(mongo_repo=repo)
+
+    container.register(MessageQuery, factory=init_get_message_query)
 
     return container
