@@ -14,7 +14,6 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from investors.models import InvestorProfile
-import notifications
 from startups.models import StartUpProfile
 from users.models import Role
 from .models import (
@@ -217,6 +216,7 @@ class RoleMixin:
             'profile': profile
             }
 
+
 class ProfileNotificationSettingsView(RoleMixin, generics.ListAPIView):
     """API view to GET all Notification Preferences for Profile"""
     queryset = NotificationPreferences.objects.all()
@@ -224,16 +224,37 @@ class ProfileNotificationSettingsView(RoleMixin, generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        notification_preferences = None
         profile_info = self.get_user_role_profile()
         user = profile_info['user']
         role = profile_info['role']
-        if user:
+        if user and user.id == self.request.user.id:
             notification_preferences = NotificationPreferences.objects.filter(
                 user=user.id,
                 role=role
             )
-        return notification_preferences
+            return notification_preferences
+        raise PermissionDenied('No permission to access the user\'s notification preferences')
+    
+    @swagger_auto_schema(
+        operation_description='Get Notification Preferences for specific profile',
+        responses={
+            status.HTTP_200_OK: NotificationPreferencesSerializer,
+            status.HTTP_403_FORBIDDEN: 
+            'Invalid user id: No permission to access the user\'s notification preferences',
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        try:
+            notification_preferences = self.get_queryset()
+            serializer = self.get_serializer(notification_preferences, many=True)
+            return Response(
+                serializer.data, status=status.HTTP_200_OK
+            )
+        except PermissionDenied as e:
+            return Response(
+                {'message': f'Invalid user id: {e}'},
+                status=status.HTTP_403_FORBIDDEN
+            )
     
 
 class ProfileNotificationSettingsByIDView(RoleMixin, generics.RetrieveUpdateAPIView):
@@ -241,13 +262,13 @@ class ProfileNotificationSettingsByIDView(RoleMixin, generics.RetrieveUpdateAPIV
     queryset = NotificationPreferences.objects.all()
     serializer_class = NotificationPreferencesSerializer
     permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
 
     def get_object(self):
-        notification_preference = None
         profile_info = self.get_user_role_profile()
         user = profile_info['user']
         role = profile_info['role']
-        if user:
+        if user and user.id == self.request.user.id:
             try:
                 notification_preference = NotificationPreferences.objects.get(
                     user=user.id,
@@ -256,9 +277,44 @@ class ProfileNotificationSettingsByIDView(RoleMixin, generics.RetrieveUpdateAPIV
                 )
             except NotificationPreferences.DoesNotExist as e:
                 logger.error(f'NotificationPreferences not found for User {user}, {role}, {e}')
-        return notification_preference
-
-
+                raise NotFound('NotificationPreferences object not found')
+            return notification_preference
+        raise PermissionDenied('No permission to access the user\'s notification preferences')
+    
+    @swagger_auto_schema(
+        operation_description='Get specific Notification Preference by ID for specific profile',
+        responses={
+            status.HTTP_200_OK: NotificationPreferencesSerializer,
+            status.HTTP_403_FORBIDDEN: 
+            'Invalid user id: No permission to access the user\'s notification preferences',
+            status.HTTP_404_NOT_FOUND: 'NotificationPreferences object not found',
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        try:
+            notification_preference = self.get_object()
+            serializer = self.get_serializer(notification_preference)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except PermissionDenied as e:
+            return Response(
+                {'message': f'Invalid user id: {e}'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        except NotFound as e:
+            return Response(
+                {'message': e},
+                status=status.HTTP_404_NOT_FOUND
+            )
+    
+    @swagger_auto_schema(
+        operation_description='Update specific Notification Preference by ID for specific profile',
+        responses={
+            status.HTTP_200_OK: NotificationPreferencesSerializer,
+            status.HTTP_400_BAD_REQUEST: 'Bad request: Validation error',
+            status.HTTP_400_BAD_REQUEST: 'Invalid notification type for this role',
+            status.HTTP_404_NOT_FOUND: 'NotificationPreferences object not found',
+        }
+    )
     def update(self, request, *args, **kwargs):
         notification_type = self.kwargs.get('notification_type')
         notification_preference = self.get_object()
@@ -291,6 +347,8 @@ class NotificationPreferencesListView(generics.ListAPIView):
     queryset = NotificationPreferences.objects.all()
     serializer_class = NotificationPreferencesSerializer
 
+
+
 class ProfileNotificationsListView(RoleMixin, generics.ListAPIView):
     """API View to GET all notifications for current profile"""
     queryset = Notification
@@ -303,8 +361,6 @@ class ProfileNotificationsListView(RoleMixin, generics.ListAPIView):
         user = profile_info['user']
         role = profile_info['role']
         profile = profile_info['profile']
-
-        notifications = Notification.objects.none()
 
         if user and user.id == self.request.user.id:
             
@@ -325,7 +381,27 @@ class ProfileNotificationsListView(RoleMixin, generics.ListAPIView):
                         if preference.in_app == True
                     )
                     notifications = notifications.filter(notification_type__in=preferences)
-
-        return notifications
-
-
+            return notifications
+        raise PermissionDenied('No permission to access the user\'s notification preferences')
+    
+    @swagger_auto_schema(
+        operation_description='Get Notifications for specific profile',
+        responses={
+            status.HTTP_200_OK: NotificationPreferencesSerializer,
+            status.HTTP_400_BAD_REQUEST: 'Bad request: Validation error',
+            status.HTTP_403_FORBIDDEN: 
+            'Invalid user id: No permission to access the user\'s notification preferences',
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        try:
+            notification_preferences = self.get_queryset()
+            serializer = self.get_serializer(notification_preferences, many=True)
+            return Response(
+                serializer.data, status=status.HTTP_200_OK
+            )
+        except PermissionDenied as e:
+            return Response(
+                {'message': f'Invalid user id: {e}'},
+                status=status.HTTP_403_FORBIDDEN
+            )
