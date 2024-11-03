@@ -23,6 +23,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
+# Retrieve the encryption key
+ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_ENV', 'PRODUCTION') == 'DEVELOPMENT'
@@ -61,6 +63,8 @@ INSTALLED_APPS = [
     'django_filters',
     'simple_history',
     'channels',
+    'drf_yasg',
+
 ]
 
 MIDDLEWARE = [
@@ -284,6 +288,18 @@ DJOSER = {
     "EMAIL_FRONTEND_SITE_NAME": "forum",
 }
 
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+
+}
 
 AUTH_USER_MODEL = 'users.User'
 
