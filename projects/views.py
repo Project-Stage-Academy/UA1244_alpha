@@ -89,7 +89,7 @@ class CreateProjectsView(generics.CreateAPIView):
             )
         try:
             response = super().create(request, *args, **kwargs)
-            logger.info(f"Project was created successfully: {response.data['project_id']}")
+            logger.info(f"Project was created successfully")
             return Response(
                 {
                     "message": "New project created successfully",
@@ -161,21 +161,19 @@ class UpdateProjectView(generics.UpdateAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-
 class ProjectViewById(generics.RetrieveAPIView):
-    """
-    """
     serializer_class = ProjectSerializerList
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Project.objects.filter(project_id = self.kwargs.get('pk'))
-    
-    def retrive(self, request, *args, **kwargs):
+        return Project.objects.filter(project_id=self.kwargs.get('pk'))
+
+    def retrieve(self, request, *args, **kwargs): 
         try:
             obj = self.get_object()
-            logger.info(f"Project retrieved successfully: {obj.id}")
-        except Http404 as e:
+            logger.info(f"Project retrieved successfully: {obj.project_id}")
+            return Response(self.get_serializer(obj).data)  
+        except Http404:
             return Response(
                 {"error": "This project doesn't exist"},
                 status=status.HTTP_404_NOT_FOUND,

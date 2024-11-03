@@ -2,9 +2,14 @@ from datetime import timedelta
 from time import sleep
 
 from django.core.exceptions import ValidationError
+from rest_framework.test import APITestCase, APIClient
 from django.test import TestCase
+
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.urls import reverse
+from rest_framework import status
+import uuid
 
 from investors.models import InvestorProfile
 from startups.models import StartUpProfile
@@ -312,3 +317,172 @@ class MediaFileTest(TestCase):
         media_file = MediaFile(project=self.project, media_file=pdf_file)
         with self.assertRaises(ValidationError):
             media_file.clean_media_file()
+
+
+class ProjectsViewTest(APITestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
+            email="john@gmail.com",
+            password="123456pok",
+            first_name="John",
+            last_name="Doe",
+            user_phone="+1234567890"
+        )
+        cls.user.add_role("Investor")
+
+        user_2 = User.objects.create_user(
+            email="lin@gmail.com",
+            password="123456pok",
+            first_name="Lim",
+            last_name="Non",
+            user_phone="+1234567890"
+        )
+        user_2.add_role("Startup")
+
+        cls.investor = InvestorProfile.objects.create(user=cls.user) 
+        cls.startup = StartUpProfile.objects.create(
+            user_id=user_2, 
+            name='Startup 1',
+            description='Test dddd',
+            website='www.strtas.com'
+        )
+
+        cls.project1 = Project.objects.create(
+            startup=cls.startup, title='Prj1', risk=0.5,
+            description='...', business_plan='https://google.com',
+            amount=10000, status=1)
+        cls.project2 = Project.objects.create(
+            startup=cls.startup, title='Prj2', risk=0.3,
+            description='...', business_plan='https://google.com',
+            amount=10004, status=1)
+
+        cls.url_get_list = reverse('project-list')
+        cls.url_startup_project = reverse('startups-project', args=[cls.startup.id])
+        cls.url_create_project = reverse('project-create')
+        cls.url_update_project = reverse('update-project', args=[cls.project1.project_id])
+        cls.url_get_by_id = reverse('project-by-id', args=[cls.project2.project_id])
+        
+        cls.new_project = {
+        'startup': cls.startup.id, 
+        'title': 'Test3', 
+        'risk': 0.5,
+        'description': '...',
+        'business_plan': 'https://google.com',
+        'amount': 10000, 
+        'status': 1
+        }
+    
+    def setUp(self):
+        self.client = APIClient()
+        token_url = reverse('jwt-create')
+        response = self.client.post(token_url, {
+            'email': 'lin@gmail.com',
+            'password': '123456pok',
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        token = response.data['access']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+    def test_get_projects(self):
+        response = self.client.get(self.url_get_list)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+    
+        results = response.data.get('results', [])
+    
+        self.assertEqual(len(results), 2) 
+        self.assertEqual(results[0]['title'], self.project1.title)
+        self.assertEqual(results[1]['title'], self.project2.title)
+    
+    def test_get_startup_projects(self):
+        response = self.client.get(self.url_get_list)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        results = response.data.get('results', [])
+
+        self.assertEqual(len(results), 2) 
+        self.assertEqual(results[0]['title'], self.project1.title)
+        self.assertEqual(results[1]['title'], self.project2.title)
+    
+    def test_get_startup_not_found(self):
+        url = reverse('startups-project', args=[999]) 
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    
+    def test_create_project(self):
+        response = self.client.post(self.url_create_project, self.new_project, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn('message', response.data)
+        self.assertEqual(response.data['message'], 'New project created successfully')
+    
+    def test_create_project_no_permission(self):
+        client = APIClient()
+        token_url = reverse('jwt-create')
+        response = client.post(token_url, {
+            'email': 'john@gmail.com',
+            'password': '123456pok',
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        token = response.data['access']
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+        response = client.post(self.url_create_project, self.new_project, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data['error'], 'You do not have permission to create a new project.')
+    
+    def test_create_project_Validation_Error(self):
+        new_project_error = {
+        'startup': self.startup.id, 
+        'title': 'Test3', 
+        'risk': 0.5,
+        'description': '...',
+        'business_plan': 'https://google.com',
+        'amount': 10000, 
+        'status': 7
+        }
+
+        response = self.client.post(self.url_create_project, new_project_error, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+
+    def test_update_project(self):
+        response = self.client.put(self.url_update_project, self.new_project, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.project1.refresh_from_db()
+        self.assertEqual(self.project1.title, 'Test3')
+
+    def test_update_project_no_permission(self):
+        client = APIClient()
+        token_url = reverse('jwt-create')
+        response = client.post(token_url, {
+            'email': 'john@gmail.com',
+            'password': '123456pok',
+        })
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        token = response.data['access']
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+        response = client.put(self.url_update_project,  self.new_project, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data['error'], 'You do not have permission to update this project.')
+    
+    def test_get_project_by_id(self):
+        response = self.client.get(self.url_get_by_id)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['title'], self.project2.title)
+
+    def test_project_not_found(self):
+        non_existent_project_id = str(uuid.uuid4())  
+        response = self.client.get(reverse('project-by-id', args=[non_existent_project_id]))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn('error', response.data)  
+        self.assertEqual(response.data['error'], "This project doesn't exist")
+        
