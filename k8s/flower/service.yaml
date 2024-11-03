@@ -3,9 +3,10 @@ kind: Service
 metadata:
   name: flower
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
   - port: 5555
     targetPort: 5555
+    nodePort: 30000
   selector:
     app: flower

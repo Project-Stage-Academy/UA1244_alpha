@@ -1,7 +1,16 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: configmap
+  name: forum-config
 data:
-  DEBUG: "True"
-  ALLOWED_HOSTS: 'localhost'
+  DJANGO_ENV: "DEVELOPMENT"
+  DJANGO_LOG_LEVEL: "DEBUG"
+  DJANGO_ALLOWED_HOSTS: "*"
+  DB_NAME: "postgres"
+  DB_HOST: "db"
+  DB_PORT: "5432"
+  REDIS_HOST: "redis"
+  CELERY_BROKER_URL: "redis://redis:6379/0"
+  MONGO_URI: "mongodb://mongodb:27017"
+  MONGO_DB_NAME: "forum"
+  MONGO_COLLECTION_NAME: "chats"

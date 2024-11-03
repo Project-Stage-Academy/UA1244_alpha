@@ -14,9 +14,11 @@ spec:
     spec:
       containers:
       - name: flower
+        image: docker-flower
+        imagePullPolicy: IfNotPresent
         command: ["celery", "-A", "forum.celery.app", "flower"]
         ports:
-        - containerPort: 5555 # port???
+        - containerPort: 5555
         envFrom:
         - configMapRef:
             name: flower-config

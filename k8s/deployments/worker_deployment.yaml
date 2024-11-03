@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: worker
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: worker
@@ -14,6 +14,8 @@ spec:
     spec:
       containers:
       - name: worker
+        image: docker-worker
+        imagePullPolicy: IfNotPresent
         command: ["celery", "-A", "forum.celery.app", "worker", "--loglevel=info"]
         envFrom:
         - configMapRef:

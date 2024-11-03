@@ -17,3 +17,9 @@ spec:
         image: redis:7.2.4-alpine
         ports:
         - containerPort: 6379
+        env:
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: forum-config
+              key: REDIS_HOST

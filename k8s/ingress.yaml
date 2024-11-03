@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: forum-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: forum-app
+            port:
+              number: 8000
+      - path: /flower
+        pathType: Prefix
+        backend:
+          service:
+            name: flower
+            port:
+              number: 5555
+      - path: /communications
+        pathType: Prefix
+        backend:
+          service:
+            name: communications
+            port:
+              number: 8001

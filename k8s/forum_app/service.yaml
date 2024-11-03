@@ -3,9 +3,10 @@ kind: Service
 metadata:
   name: forum-app
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
   - port: 8000
     targetPort: 8000
+    nodePort: 30001
   selector:
     app: forum-app
