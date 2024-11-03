@@ -6,8 +6,83 @@ from .models import TrackProjects
 from projects.models import Project
 from investors.models import InvestorProfile
 from startups.models import StartUpProfile
+from django.test import TestCase
+from django.utils import timezone
+from unittest.mock import patch
 
 User = get_user_model()
+
+class TrackProjectsModelTest(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.user_st = User.objects.create(
+            email='user1@gmail.com', first_name='Startup', last_name='St', user_phone='+999999999')
+        cls.user_st.add_role('Startup')
+        cls.user_inv = User.objects.create(
+            email='user2@gmail.com', first_name='Investor', last_name='In', user_phone='+999999999')
+        cls.user_inv.add_role('Investor')
+        cls.investor = InvestorProfile.objects.create(user=cls.user_inv)
+        cls.startup = StartUpProfile.objects.create(
+            user_id=cls.user_st, name='Startup Company', description='')
+    
+    def setUp(self):
+        self.project = Project.objects.create(
+            startup=self.startup, title='Test pr', risk=0.2,
+            description='...', business_plan='https://google2.com',
+            amount=3049, status=1)
+
+    
+    def test_create_track_project(self):
+        """Test creating a TrackProject instance."""
+        track_project = TrackProjects.objects.create(
+            project=self.project,
+            investor=self.investor
+        )
+        self.assertIsInstance(track_project, TrackProjects)
+        self.assertEqual(track_project.project, self.project)
+        self.assertEqual(track_project.investor, self.investor)
+    
+    @patch('django.utils.timezone.now')
+    def test_str_method(self, mock_now):
+        """Test the string representation of the TrackProject instance."""
+
+        fixed_time = timezone.datetime(2024, 11, 3, 12, 0, 0)
+        mock_now.return_value = fixed_time
+
+        track_project = TrackProjects.objects.create(
+            project=self.project,
+            investor=self.investor,
+            saved_at=timezone.now()  
+        )
+
+        expected_str = f"Investor {self.investor}, Project {self.project}, Saved at {timezone.now()}"
+        self.assertEqual(str(track_project), expected_str)
+
+    def test_unique_project_investor(self):
+        """Test that a TrackProject cannot be created with the same investor and project."""
+        TrackProjects.objects.create(project=self.project, investor=self.investor)
+        with self.assertRaises(Exception):
+            TrackProjects.objects.create(project=self.project, investor=self.investor)
+
+    def test_project_relation(self):
+        """Test the relationship between TrackProjects and Project."""
+        track_project = TrackProjects.objects.create(
+            project=self.project,
+            investor=self.investor
+        )
+        self.assertEqual(track_project.project.title, self.project.title)
+
+    def test_investor_relation(self):
+        """Test the relationship between TrackProjects and InvestorProfile."""
+        track_project = TrackProjects.objects.create(
+            project=self.project,
+            investor=self.investor
+        )
+        self.assertEqual(track_project.investor.id, self.investor.id)
+
 
 class TrackProjectFollowViewTest(APITestCase):
     @classmethod
