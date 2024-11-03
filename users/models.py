@@ -246,7 +246,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             logger.error(f"Role '{role_name}' not found for user {self.email}.")
             raise ValidationError(f"Role '{role_name}' is not assigned to the user.")
 
-        if self.active_role and self.active_role != role:
+        if self.active_role != role:
             logger.warning(f"User  {self.email} is attempting to set an active role that is not their current role.")
 
         self.active_role = role
