@@ -320,9 +320,13 @@ class MediaFileTest(TestCase):
 
 
 class ProjectsViewTest(APITestCase):
+    """
+    Test suite for Project views, including list, detail, create, and update functionalities.
+    """
 
     @classmethod
     def setUpTestData(cls):
+
         cls.user = User.objects.create_user(
             email="john@gmail.com",
             password="123456pok",
@@ -387,6 +391,9 @@ class ProjectsViewTest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
     def test_get_projects(self):
+        """
+        Test that the API returns a list of all projects.
+        """
         response = self.client.get(self.url_get_list)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
     
@@ -397,6 +404,9 @@ class ProjectsViewTest(APITestCase):
         self.assertEqual(results[1]['title'], self.project2.title)
     
     def test_get_startup_projects(self):
+        """
+        Test that the API returns a list of projects for a specific startup.
+        """
         response = self.client.get(self.url_get_list)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -407,12 +417,18 @@ class ProjectsViewTest(APITestCase):
         self.assertEqual(results[1]['title'], self.project2.title)
     
     def test_get_startup_not_found(self):
+        """
+        Test that the API returns a 404 error for a non-existent startup.
+        """
         url = reverse('startups-project', args=[999]) 
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
     def test_create_project(self):
+        """
+        Test that a startup can create a new project.
+        """
         response = self.client.post(self.url_create_project, self.new_project, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -420,6 +436,9 @@ class ProjectsViewTest(APITestCase):
         self.assertEqual(response.data['message'], 'New project created successfully')
     
     def test_create_project_no_permission(self):
+        """
+        Test that a user without the 'Startup' role cannot create a project.
+        """
         client = APIClient()
         token_url = reverse('jwt-create')
         response = client.post(token_url, {
@@ -434,7 +453,10 @@ class ProjectsViewTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data['error'], 'You do not have permission to create a new project.')
     
-    def test_create_project_Validation_Error(self):
+    def test_create_project_validation_error(self):
+        """
+        Test that invalid data in the project creation request returns a validation error.
+        """
         new_project_error = {
         'startup': self.startup.id, 
         'title': 'Test3', 
@@ -442,7 +464,7 @@ class ProjectsViewTest(APITestCase):
         'description': '...',
         'business_plan': 'https://google.com',
         'amount': 10000, 
-        'status': 7
+        'status': 7  
         }
 
         response = self.client.post(self.url_create_project, new_project_error, format='json')
@@ -450,6 +472,9 @@ class ProjectsViewTest(APITestCase):
     
 
     def test_update_project(self):
+        """
+        Test that a startup can update an existing project.
+        """
         response = self.client.put(self.url_update_project, self.new_project, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -457,6 +482,9 @@ class ProjectsViewTest(APITestCase):
         self.assertEqual(self.project1.title, 'Test3')
 
     def test_update_project_no_permission(self):
+        """
+        Test that a user without the 'Startup' role cannot update a project.
+        """
         client = APIClient()
         token_url = reverse('jwt-create')
         response = client.post(token_url, {
@@ -473,16 +501,21 @@ class ProjectsViewTest(APITestCase):
         self.assertEqual(response.data['error'], 'You do not have permission to update this project.')
     
     def test_get_project_by_id(self):
+        """
+        Test that the API returns the correct project by its ID.
+        """
         response = self.client.get(self.url_get_by_id)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], self.project2.title)
 
     def test_project_not_found(self):
+        """
+        Test that the API returns a 404 error for a non-existent project.
+        """
         non_existent_project_id = str(uuid.uuid4())  
         response = self.client.get(reverse('project-by-id', args=[non_existent_project_id]))
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIn('error', response.data)  
         self.assertEqual(response.data['error'], "This project doesn't exist")
-        
