@@ -31,8 +31,6 @@ class InvestorsNotificationsListView(generics.ListAPIView):
         investor = get_object_or_404(InvestorProfile, user=self.request.user)
         return Notification.objects.filter(investor=investor.id).order_by('-created_at')
 
-=======
-
 
 
 class NotificationListView(generics.ListAPIView):
