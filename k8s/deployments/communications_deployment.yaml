@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: communications
-        image: docker-communications
+        image: saberan/communications:latest
         imagePullPolicy: IfNotPresent
         command: ["daphne", "-p", "8001", "-b", "0.0.0.0", "forum.asgi:application"]
         ports:

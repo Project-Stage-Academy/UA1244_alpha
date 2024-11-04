@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: flower
-        image: docker-flower
+        image: saberan/flower
         imagePullPolicy: IfNotPresent
         command: ["celery", "-A", "forum.celery.app", "flower"]
         ports:
