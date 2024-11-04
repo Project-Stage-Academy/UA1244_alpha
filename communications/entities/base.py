@@ -18,6 +18,5 @@ class BaseEntity(ABC):
         kw_only=True,
     )
 
-
     def __post_init__(self):
         logger.info(f"Created new entity: {self.__class__.__name__} with oid {self.oid} at {self.created_at}")

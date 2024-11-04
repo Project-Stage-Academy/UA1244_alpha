@@ -19,8 +19,6 @@ from .models import Notification, NotificationStatus
 from .filters import NotificationFilter
 
 
-
-
 class InvestorsNotificationsListView(generics.ListAPIView):
     """API view for get investors notifications"""
 
@@ -30,9 +28,6 @@ class InvestorsNotificationsListView(generics.ListAPIView):
     def get_queryset(self):
         investor = get_object_or_404(InvestorProfile, user=self.request.user)
         return Notification.objects.filter(investor=investor.id).order_by('-created_at')
-
-=======
-
 
 
 class NotificationListView(generics.ListAPIView):

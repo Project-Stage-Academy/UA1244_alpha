@@ -18,6 +18,7 @@ class MessageNotificationEvent(BaseEvent):
             await database_sync_to_async(Notification.objects.create)(
                 investor_id=message.sender_id,
                 startup_id=message.receiver_id,
+                notification_type=2,
             )
 
             logger.info(f"Notification object created for message from sender {message.sender_id}")

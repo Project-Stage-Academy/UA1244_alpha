@@ -30,7 +30,11 @@ class MongoDBRepository(BaseRepository):
         """Decrypt the message content and return a Message object."""
         try:
             decrypted_content = cipher_suite.decrypt(encrypted_message['content']).decode()
-            decrypted_message = Message(**encrypted_message, content=decrypted_content)
+
+            decrypted_message = Message(
+                **{key: value for key, value in encrypted_message.items() if key != 'content'},
+                content=decrypted_content
+            )
             return decrypted_message
         except Exception as e:
             logger.error(f"Failed to decrypt message: {e}", exc_info=True)

@@ -15,13 +15,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_group_name = f"chat_{self.room_name}"
         logger.info(f"Attempting to connect to room: {self.room_name}")
 
+        if self.scope['user'].is_anonymous:
+            logger.warning(f"Anonymous user attempted to connect to room: {self.room_name}")
+            await self.close()
+            return
+
+        await self.accept()
+        logger.info(f"Connection accepted for room: {self.room_name}")
+
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
         )
-
-        await self.accept()
-        logger.info(f"Connection accepted for room: {self.room_name}")
 
     async def disconnect(self, close_code):
         logger.info(f"Disconnecting from room: {self.room_name} with code: {close_code}")
@@ -37,6 +42,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
             message = text_data_json['message']
             sender_id = text_data_json['sender_id']
             receiver_id = text_data_json['receiver_id']
+
+            if not message.strip():
+                logger.warning(
+                    f"Empty message from sender: {sender_id} to receiver: {receiver_id} in room: {self.room_name}")
+                await self.send(text_data=json.dumps({
+                    'error': 'Message cannot be empty.'
+                }))
+                return
 
             logger.info(f"Message from sender: {sender_id} to receiver: {receiver_id} in room: {self.room_name}")
 
