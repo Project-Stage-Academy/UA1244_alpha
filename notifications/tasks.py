@@ -20,7 +20,7 @@ from .models import (
 
 
 User = get_user_model()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('django')
 
 
 @shared_task
@@ -67,7 +67,6 @@ def send_notification_email(self, notification_id):
 
         case NotificationType.MESSAGE:
             if notification.message_id:
-                print(notification_id, notification.get_message_participants())
                 participants = notification.get_message_participants()
                 if participants:
                     recipient.get('receiver_id')

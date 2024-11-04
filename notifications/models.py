@@ -14,7 +14,7 @@ from communications import init_container, MongoDBRepository
 
 
 User = get_user_model()
-logger = logging.getLogger('__name__')
+logger = logging.getLogger('django')
 
 container = init_container()
 mongo_container = container.resolve(MongoDBRepository)
