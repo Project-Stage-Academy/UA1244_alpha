@@ -133,19 +133,19 @@ class InvestmentPermission(DetailedPermissionLogging):
         try:
             investment_exists = InvestmentTracking.objects.filter(
                 investor=investor_profile,
-                startup_id=view.kwargs.get('startup_id')  #if /startups/<int:startup_id>/!
+                sender_id=view.kwargs.get('sender_id')  #if /startups/<int:sender_id>/!
             ).exists()
 
             if investment_exists:
                 self.log_event('info', 'Investment found', {
                     **base_log_data,
-                    'investor_id': investor_profile.id
+                    'receiver_id': investor_profile.id
                 })
                 return True
             else:
                 self.log_event('warning', 'No investment found', {
                     **base_log_data,
-                    'investor_id': investor_profile.id,
+                    'receiver_id': investor_profile.id,
                     'reason': 'no_investment'
                 })
                 return False

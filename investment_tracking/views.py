@@ -15,9 +15,9 @@ class InvestmentTrackingSaveView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, startup_id):
+    def post(self, request, sender_id):
         investor_profile = get_object_or_404(InvestorProfile, user=request.user)
-        startup = get_object_or_404(StartUpProfile, id=startup_id)
+        startup = get_object_or_404(StartUpProfile, id=sender_id)
         serializer = InvestmentTrackingSerializerCreate(data={'investor': investor_profile.id, 'startup': startup.id})
         if serializer.is_valid():
             try:

@@ -29,14 +29,16 @@ class NotificationStatus(models.IntegerChoices):
     UNREAD = 0, _('Unread')
     READ = 1, _('Read')
 
+
 class NotificationDeliveryStatus(models.IntegerChoices):
-    """Notification delivary status class (IntegerChoices)
+    """Notification delivery status class (IntegerChoices)
     
     - FAILED: 0
     - SENT: 1
     """
     FAILED = 0, _('Failed')
     SENT = 1, _('Sent')
+
 
 class Notification(models.Model):
     """Notification model
@@ -47,7 +49,7 @@ class Notification(models.Model):
     - investor(ForeignKey): associated investor's id
     - startup(ForeignKey): associated startup's id
     - message_id(CharField): associated message id
-    - delivery_status(BooleanField): notification delivary status (sent/failed)
+    - delivery_status(BooleanField): notification delivery status (sent/failed)
     - created_at(DateTimeField)
     - sent_at(DateTimeField)
     - read_at(DateTimeField)
@@ -58,9 +60,9 @@ class Notification(models.Model):
         choices=NotificationStatus.choices, default=NotificationStatus.UNREAD)
     investor = models.ForeignKey(InvestorProfile, on_delete=models.CASCADE)
     startup = models.ForeignKey(StartUpProfile, on_delete=models.CASCADE)
-    message_id = models.CharField(max_length=24, blank=True, null=True)
+    message_id = models.CharField(max_length=36, blank=True, null=True)
     delivery_status = models.IntegerField(
-         choices=NotificationDeliveryStatus, blank=True, null=True)
+        choices=NotificationDeliveryStatus, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(blank=True, null=True)
     read_at = models.DateTimeField(blank=True, null=True)
@@ -68,7 +70,7 @@ class Notification(models.Model):
     def __str__(self):
         type_ = NotificationType(self.notification_type).label
         return f'{type_}: {self.investor} -> {self.startup}' \
-        + f' {self.sent_at if self.sent_at else ""}'
+            + f' {self.sent_at if self.sent_at else ""}'
 
     def set_read_status(self, read):
         """Set notification status to READ or UNREAD"""
@@ -95,6 +97,7 @@ class Notification(models.Model):
         startupt_url = f'{SITE_URL}{reverse("startup-profile-by-id", args=[startup.id])}'
         investor = self.investor.user
         investor_url = f'{SITE_URL}{reverse("investor-profile-by-id", args=[investor.id])}'
+        chat_room_url = f'{SITE_URL}communications/chatrooms/<your_room_oid>/messages/'
 
         match self.notification_type:
             case NotificationType.FOLLOW:
@@ -102,6 +105,6 @@ class Notification(models.Model):
             case NotificationType.UPDATE:
                 associated_url = startupt_url
             case NotificationType.MESSAGE:
-                pass
+                associated_url = chat_room_url
 
         return associated_url

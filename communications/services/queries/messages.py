@@ -1,9 +1,9 @@
+import logging
 from dataclasses import dataclass
 from typing import Optional
-import logging
 
 from communications.domain.entities.messages import ChatRoom, Message
-from communications.repositories.base import BaseRepository
+from communications.repositories.base import BaseChatsRepository, BaseMessagesRepository
 from communications.repositories.filters import GetMessagesFilters
 from communications.services.queries.base import BaseQuery
 
@@ -12,7 +12,7 @@ logger = logging.getLogger('django')
 
 @dataclass
 class ChatRoomQuery(BaseQuery):
-    mongo_repo: BaseRepository
+    mongo_repo: BaseChatsRepository
 
     async def handle(self, room_oid: str) -> Optional[ChatRoom]:
         """Retrieve a chat room by its unique identifier."""
@@ -22,7 +22,7 @@ class ChatRoomQuery(BaseQuery):
 
 @dataclass
 class MessageQuery(BaseQuery):
-    mongo_repo: BaseRepository
+    mongo_repo: BaseMessagesRepository
 
     async def handle(self, room_oid: str, filters: GetMessagesFilters) -> list[Message]:
         """Retrieve all messages for a specific chat room."""

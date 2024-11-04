@@ -212,7 +212,7 @@ class ProjectTest(TestCase):
         self.project.investors.add(self.investor_)
         self.assertTrue(Subscription.objects.filter(
             project_id=self.project.project_id,
-            investor_id=self.investor_.id).exists()
+            receiver_id=self.investor_.id).exists()
         )
 
     def test_adding_media_file_image(self):

@@ -14,13 +14,13 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task
-def create_notification(investor_id, startup_id, type_, message_id=None):
+def create_notification(receiver_id, sender_id, type_, message_id=None):
     """Create notification instance"""
     try:
         Notification.objects.create(
             notification_type=type_,
-            investor_id=investor_id,
-            startup_id=startup_id,
+            receiver_id=receiver_id,
+            sender_id=sender_id,
             message_id=message_id
         )
     except Exception as e:

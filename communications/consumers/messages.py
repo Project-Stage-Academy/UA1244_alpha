@@ -3,11 +3,13 @@ import logging
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 
-from communications import init_container, ChatRoomQuery
+from communications.di_container import init_container
 from communications.domain.entities.messages import Message
 from communications.domain.exceptions.base import ApplicationException
 from communications.domain.values.messages import Text
 from communications.services.commands.messages import CreateMessageCommand
+from communications.services.queries.messages import ChatRoomQuery
+
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         logger.info(f"Attempting to connect to room: {self.room_oid}")
 
         chatroom = await get_chat_room_query.handle(self.room_oid)
-        if not chatroom or self.user_id not in [chatroom.startup_id, chatroom.investor_id]:
+        if not chatroom or self.user_id not in [chatroom.sender_id, chatroom.receiver_id]:
             await self.close()
             return
 
@@ -48,13 +50,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             text_data_json = json.loads(text_data)
             message = text_data_json['message']
-            sender_id = text_data_json['sender_id']
-            receiver_id = text_data_json['receiver_id']
 
-            logger.info(f"Message from sender: {sender_id} to receiver: {receiver_id} in room: {self.room_oid}")
+            logger.info(f"Message in room: {self.room_oid}")
 
             await create_message_command.handle(
-                message=Message(sender_id=sender_id, receiver_id=receiver_id, content=Text(value=message)),
+                message=Message(content=Text(value=message)),
                 room_oid=self.room_oid
             )
 
@@ -63,8 +63,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 {
                     'type': 'chat_message',
                     'message': message,
-                    'sender_id': sender_id,
-                    'receiver_id': receiver_id
                 }
             )
         except ApplicationException as e:
@@ -72,13 +70,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def chat_message(self, event):
         message = event['message']
-        sender_id = event['sender_id']
-        receiver_id = event['receiver_id']
-
-        logger.debug(f"Broadcasting message: {message} from sender: {sender_id} to receiver: {receiver_id}")
 
         await self.send(text_data=json.dumps({
             'message': message,
-            'sender_id': sender_id,
-            'receiver_id': receiver_id
         }))

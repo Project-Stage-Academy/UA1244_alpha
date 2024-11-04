@@ -19,8 +19,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('saved_at', models.DateTimeField(auto_now_add=True)),
-                ('investor_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='investors.investorprofile')),
-                ('startup_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='startups.startupprofile')),
+                ('receiver_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='investors.investorprofile')),
+                ('sender_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='startups.startupprofile')),
             ],
             options={
                 'verbose_name': 'Investment Tracking',
