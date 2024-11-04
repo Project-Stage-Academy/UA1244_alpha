@@ -8,14 +8,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 
-
 from .models import TrackProjects
 from projects.models import Project
 from investors.models import InvestorProfile
 from .serializers import TrackProjectSerializerCreate, TrackProjectSerializerGet
 
 logger = logging.getLogger("django")
-
 
 class TrackProjectFollowView(generics.CreateAPIView):
     """
@@ -38,6 +36,7 @@ class TrackProjectFollowView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
+        logger.info(f"Investor {request.user.id} is attempting to follow a project.")
         project = get_object_or_404(Project, project_id=self.kwargs["project_id"])
         investor_profile = get_object_or_404(InvestorProfile, user=request.user)
 
@@ -51,13 +50,15 @@ class TrackProjectFollowView(generics.CreateAPIView):
         serializer = self.get_serializer(data=data)
         
         try:
-            serializer.is_valid(raise_exception=True) 
-            self.perform_create(serializer) 
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            logger.info(f"Investor {investor_profile.id} successfully followed project {project.project_id}.")
             return Response(
                 {'message': f'You successfully subscribed to project {project.title}'},
                 status=status.HTTP_201_CREATED
             )
         except ValidationError as e:
+            logger.error(f"Validation error while investor {request.user.id} tried to follow project {project.project_id}. Error: {e.detail}")
             return Response(
                 {'error': 'Invalid data', 
                  'more information': e.detail},
@@ -80,5 +81,7 @@ class InvestorsProjectsListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        logger.info(f"Fetching tracked projects for investor {self.request.user.id}.")
         tracked_list = TrackProjects.objects.filter(investor__user__id=self.request.user.id)
+        logger.info(f"Investor {self.request.user.id} is following {tracked_list.count()} projects.")
         return tracked_list
