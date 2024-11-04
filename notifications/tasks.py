@@ -8,28 +8,28 @@ from django.utils import timezone
 from forum.settings import DEFAULT_FROM_EMAIL
 from .models import Notification, NotificationType
 
-
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
 @shared_task
-def create_notification(receiver_id, sender_id, type_, message_id=None):
+def create_notification(investor_id, startup_id, type_, message_id=None):
     """Create notification instance"""
     try:
         Notification.objects.create(
             notification_type=type_,
-            receiver_id=receiver_id,
-            sender_id=sender_id,
+            investor_id=investor_id,
+            startup_id=startup_id,
             message_id=message_id
         )
     except Exception as e:
         print(e)
 
+
 @shared_task(bind=True, max_retries=3)
 def send_notification_email(self, notification_id):
     """Send notification via email
-    
+
     Parameters:
     - notification_id
     """
@@ -77,7 +77,7 @@ def send_notification_email(self, notification_id):
 
 def render_email_html_message(recipient, message, profile_url, profile_type):
     """Render email html_message with custom
-    
+
     Parameters:
     - recipient
     - message

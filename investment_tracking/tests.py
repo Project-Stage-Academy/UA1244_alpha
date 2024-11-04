@@ -86,10 +86,10 @@ class InvestmentTrackingTests(APITestCase):
 
         self.assertEqual(len(response.data['results']), 2)
 
-        sender_ids = {startup['startup'] for startup in response.data['results']}
+        startup_ids = {startup['startup'] for startup in response.data['results']}
         expected_ids = {self.startup1.id, self.startup2.id}
 
-        self.assertSetEqual(sender_ids, expected_ids)
+        self.assertSetEqual(startup_ids, expected_ids)
 
     def test_unsave_from_investment_tracking(self):
         InvestmentTracking.objects.create(

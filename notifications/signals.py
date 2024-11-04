@@ -16,8 +16,8 @@ def create_notification_on_investor_follow(sender, instance, created, **kwargs):
     """Create a notification when an investor starts following a startup"""
     if created:
         create_notification.delay(
-            receiver_id=instance.investor.id,
-            sender_id=instance.startup.id,
+            investor_id=instance.investor.id,
+            startup_id=instance.startup.id,
             type_=NotificationType.FOLLOW
         )
 
@@ -35,7 +35,7 @@ def create_notification_on_startup_update(sender, instance, **kwargs):
     tracking = InvestmentTracking.objects.filter(startup=instance)
     for track in tracking:
         create_notification.delay(
-            receiver_id=track.investor.id,
-            sender_id=instance.id,
+            investor_id=track.investor.id,
+            startup_id=instance.id,
             type_=NotificationType.UPDATE
         )
