@@ -20,7 +20,7 @@ from .models import (
 
 
 User = get_user_model()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('django')
 
 
 @shared_task
@@ -33,6 +33,7 @@ def create_notification(investor_id, startup_id, type_, message_id=None):
             startup_id=startup_id,
             message_id=message_id
         )
+        logger.debug('Notification created successfully')
     except (ValidationError) as e:
         logger.error(f'Error occured while creating notification: {e}')
 
@@ -67,7 +68,6 @@ def send_notification_email(self, notification_id):
 
         case NotificationType.MESSAGE:
             if notification.message_id:
-                print(notification_id, notification.get_message_participants())
                 participants = notification.get_message_participants()
                 if participants:
                     recipient.get('receiver_id')
@@ -75,6 +75,7 @@ def send_notification_email(self, notification_id):
                     message = f'You have new message.'
                     html_message = render_email_html_message(
                         recipient, message, profile_url=None, profile_type=None, include_link=False)
+                    logger.debug(f'message participants retrieved: {participants}')
                 else:
                     logger.error('Failed to get message participants')
             else:
@@ -88,6 +89,7 @@ def send_notification_email(self, notification_id):
                     fail_silently=False)
             notification.sent_at = timezone.now()
             notification.save()
+            logging.info(f'email sent successfully: {notification.sent_at}')
         else:
             logger.error('Error fetching recipient')
 

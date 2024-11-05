@@ -5,10 +5,14 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 
 from rest_framework import generics, filters, status
+
+from rest_framework import generics, filters, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied, NotFound
+from rest_framework.exceptions import NotFound
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -33,6 +37,8 @@ from .serializers import (
 from .filters import NotificationFilter
 
 
+User = get_user_model()
+logger = logging.getLogger('django')
 
 
 class InvestorsNotificationsListView(generics.ListAPIView):
@@ -49,7 +55,8 @@ class InvestorsNotificationsListView(generics.ListAPIView):
 User = get_user_model()
 logger = logging.getLogger('__name__')
 
-class NotificationListView(generics.ListCreateAPIView):
+
+class NotificationListView(generics.ListAPIView):
     """API view for all Notifications
     
     Filter fields:
@@ -346,7 +353,6 @@ class NotificationPreferencesListView(generics.ListAPIView):
     """API View to get all Notification Preferences"""
     queryset = NotificationPreferences.objects.all()
     serializer_class = NotificationPreferencesSerializer
-
 
 
 class ProfileNotificationsListView(RoleMixin, generics.ListAPIView):
