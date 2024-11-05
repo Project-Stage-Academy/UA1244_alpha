@@ -10,4 +10,11 @@ class InvestorProfileViewById(generics.RetrieveUpdateDestroyAPIView):
     """API view to GET, UPDADE, DELETE investor by id"""
     queryset = InvestorProfile.objects.all()
     serializer_class = InvestorSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
+
+
+class InvestorProfileListView(generics.ListCreateAPIView):
+    """API view to GET, UPDADE, DELETE investor by id"""
+    queryset = InvestorProfile.objects.all()
+    serializer_class = InvestorSerializer
+    permission_classes = [IsAuthenticated]
