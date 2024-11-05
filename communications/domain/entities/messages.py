@@ -12,6 +12,8 @@ logger = logging.getLogger('django')
 @dataclass
 class Message(BaseEntity):
     content: Text
+    sender_id: int
+    receiver_id: int
     read_at: Optional[datetime] = None
 
     def mark_as_read(self):

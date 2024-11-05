@@ -1,16 +1,20 @@
 import logging
-from celery import shared_task
 
-from django.core.mail import send_mail
+from celery import shared_task
 from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
 from django.utils import timezone
 
+from communications.di_container import init_container
+from communications.repositories.base import BaseMessagesRepository
 from forum.settings import DEFAULT_FROM_EMAIL
 from .models import Notification, NotificationType
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
+container = init_container()
+mongo_repo: BaseMessagesRepository = container.resolve(BaseMessagesRepository)
 
 @shared_task
 def create_notification(investor_id, startup_id, type_, message_id=None):
@@ -55,7 +59,13 @@ def send_notification_email(self, notification_id):
                 recipient, message, associated_profile_url, 'startup')
 
         case NotificationType.MESSAGE:
-            return
+            message = mongo_repo.get_message_by_id(notification.message_id)
+            receiver = User.objects.get(id=message.receiver_id)
+            recipient = receiver.email
+            subject = 'Forum: New message'
+            message = 'You have a new message'
+            html_message = render_email_html_message(
+                recipient, message, associated_profile_url, 'startup')
 
     try:
         recipient_email = str(recipient)
@@ -85,7 +95,7 @@ def render_email_html_message(recipient, message, profile_url, profile_type):
     - profile_type
     """
     html_message = f'''
-    <p>Hello, {recipient.get_full_name()}</p>
+    <p>Hello, {recipient}</p>
     <p>{message}</p>
     <p><a href={profile_url}>View {profile_type}'s profile</a></p>
     <p>Thank you for choosing Forum!</p>

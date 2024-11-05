@@ -14,8 +14,8 @@ from communications.services.queries.messages import ChatRoomQuery
 logger = logging.getLogger(__name__)
 
 container = init_container()
-create_message_command = container.resolve(CreateMessageCommand)
-get_chat_room_query = container.resolve(ChatRoomQuery)
+create_message_command: CreateMessageCommand = container.resolve(CreateMessageCommand)
+get_chat_room_query: ChatRoomQuery = container.resolve(ChatRoomQuery)
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -25,7 +25,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_group_name = f"chat_{self.room_oid}"
         logger.info(f"Attempting to connect to room: {self.room_oid}")
 
-        chatroom = await get_chat_room_query.handle(self.room_oid)
+        chatroom = get_chat_room_query.handle(self.room_oid)
         if not chatroom or self.user_id not in [chatroom.sender_id, chatroom.receiver_id]:
             await self.close()
             return
@@ -53,9 +53,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             logger.info(f"Message in room: {self.room_oid}")
 
-            await create_message_command.handle(
-                message=Message(content=Text(value=message)),
-                room_oid=self.room_oid
+            create_message_command.handle(
+                message_data=message,
+                room_oid=self.room_oid,
+                user_id=self.user_id
             )
 
             await self.channel_layer.group_send(

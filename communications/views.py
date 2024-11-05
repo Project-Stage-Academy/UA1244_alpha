@@ -2,6 +2,7 @@ import logging
 from dataclasses import asdict
 
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -9,25 +10,28 @@ from communications.repositories.base import BaseChatsRepository, BaseMessagesRe
 from communications.di_container import init_container
 from investors.models import InvestorProfile
 from startups.models import StartUpProfile
-from .consumers.messages import get_chat_room_query
-from .domain.entities.messages import ChatRoom
+from .consumers.messages import get_chat_room_query, create_message_command
+from .domain.entities.messages import ChatRoom, Message
 from .domain.exceptions.base import ApplicationException
 from .permissions import IsOwnerOrRecipient
 from .serializers import MessageSerializer, ChatRoomSerializer
+from .services.commands.messages import CreateMessageCommand
 from .services.queries.messages import ChatRoomQuery
 
 logger = logging.getLogger(__name__)
 
 container = init_container()
-mongo_chats_repo = container.resolve(BaseChatsRepository)
-mongo_messages_repo = container.resolve(BaseMessagesRepository)
-get_chat_room_query = container.resolve(ChatRoomQuery)
+mongo_chats_repo: BaseChatsRepository = container.resolve(BaseChatsRepository)
+mongo_messages_repo: BaseMessagesRepository = container.resolve(BaseMessagesRepository)
+get_chat_room_query: ChatRoomQuery = container.resolve(ChatRoomQuery)
+create_message_command: CreateMessageCommand = container.resolve(CreateMessageCommand)
 
 
 class CreateChatRoomView(APIView):
     """
     View for creating a new chat room between a startup and an investor.
     """
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = ChatRoomSerializer(data=request.data, context={'mongo_chats_repo': mongo_chats_repo})
@@ -61,22 +65,19 @@ class SendMessageView(APIView):
     """
     View for sending a message in a specific chat room.
     """
-    permission_classes = (IsOwnerOrRecipient,)
+    permission_classes = (IsOwnerOrRecipient, IsAuthenticated)
 
     def post(self, request, room_oid):
         logger.info(f"SendMessageView POST request received for room_oid: {room_oid}")
 
         try:
-            chat: ChatRoom = get_chat_room_query(room_oid)
-            if request.user.id == chat.receiver_id:
-                chat.receiver_id, chat.sender_id = chat.sender_id, request.user.id
-
-            serializer = MessageSerializer(
-                data=request.data,
-                context={'mongo_messages_repo': mongo_messages_repo, 'room_oid': room_oid}
-            )
+            serializer = MessageSerializer(data=request.data)
             if serializer.is_valid():
-                message = serializer.save()
+                message: Message = create_message_command.handle(
+                    user_id=request.user.id,
+                    room_oid=room_oid,
+                    message_data=request.data
+                )
                 logger.info(f"Message sent with ID: {message.oid} in room: {room_oid}")
                 return Response(data={'message_id': str(message.oid)}, status=status.HTTP_201_CREATED)
 

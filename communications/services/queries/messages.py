@@ -14,7 +14,7 @@ logger = logging.getLogger('django')
 class ChatRoomQuery(BaseQuery):
     mongo_repo: BaseChatsRepository
 
-    async def handle(self, room_oid: str) -> Optional[ChatRoom]:
+    def handle(self, room_oid: str) -> Optional[ChatRoom]:
         """Retrieve a chat room by its unique identifier."""
         chat = self.mongo_repo.get_chatroom(room_oid)
         return chat
@@ -24,7 +24,7 @@ class ChatRoomQuery(BaseQuery):
 class MessageQuery(BaseQuery):
     mongo_repo: BaseMessagesRepository
 
-    async def handle(self, room_oid: str, filters: GetMessagesFilters) -> list[Message]:
+    def handle(self, room_oid: str, filters: GetMessagesFilters) -> list[Message]:
         """Retrieve all messages for a specific chat room."""
         messages = self.mongo_repo.get_messages(room_oid, filters)
         return messages

@@ -62,3 +62,7 @@ class BaseMessagesRepository(BaseRepository):
     def get_messages(self, room_oid: str, filters: GetMessagesFilters) -> List[Message]:
         """Retrieve messages from a chatroom based on given filters."""
         pass
+
+    @abstractmethod
+    def get_message_by_id(self, message_oid: str) -> Optional[Message]:
+        pass

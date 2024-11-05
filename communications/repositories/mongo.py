@@ -83,3 +83,29 @@ class MongoDBMessagesRepositories(BaseMessagesRepository):
         except PyMongoError as e:
             logger.error(f"Failed to retrieve messages for chat room with ID {room_oid}: {e}", exc_info=True)
             return []
+
+    def get_message_by_id(self, message_id: str) -> Optional[Message]:
+        """
+        Retrieve a specific message by its `message_id` across all chatrooms.
+        """
+        try:
+            result = self._collection.aggregate([
+                {"$unwind": "$messages"},
+                {"$match": {"messages.oid": message_id}},
+                {"$project": {"_id": 0, "messages": 1}}
+            ])
+
+            message_data = next(result, {}).get("messages")
+
+            if message_data:
+                message_data['content'] = cipher_suite.decrypt(message_data['content']).decode()
+                message = Message(**message_data)
+                logger.info(f"Message with ID {message_id} retrieved successfully.")
+                return message
+
+            logger.warning(f"Message with ID {message_id} not found.")
+            return None
+
+        except PyMongoError as e:
+            logger.error(f"Error retrieving message with ID {message_id}: {e}", exc_info=True)
+            return None
