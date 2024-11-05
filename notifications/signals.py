@@ -15,6 +15,7 @@ from .tasks import (
 )
 
 
+
 @receiver(post_save, sender=InvestmentTracking)
 def create_notification_on_investor_follow(sender, instance, created, **kwargs):
     """Create a notification when an investor starts following a startup"""
@@ -45,3 +46,16 @@ def setup_notification_settings(sender, instance, created, **kwargs):
         else:
             raise ValueError('Invalid role')
         set_initial_notification_settings.delay(instance_id=instance.id, role_name=role_name)
+
+
+@receiver(post_save, sender=StartUpProfile)
+def create_notification_on_startup_update(sender, instance, **kwargs):
+    """Create notifications for investor when startyp was updated"""
+
+    tracking = InvestmentTracking.objects.filter(startup=instance)
+    for track in tracking:
+        create_notification.delay(
+            investor_id=track.investor.id,
+            startup_id=instance.id,
+            type_=NotificationType.UPDATE
+        )

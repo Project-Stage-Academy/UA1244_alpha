@@ -1,10 +1,10 @@
 import logging
-import profile
 from django.forms import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
 
 from rest_framework import generics, filters, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -36,7 +36,18 @@ User = get_user_model()
 logger = logging.getLogger('django')
 
 
-class NotificationListView(generics.ListCreateAPIView):
+class InvestorsNotificationsListView(generics.ListAPIView):
+    """API view for get investors notifications"""
+
+    serializer_class = NotificationForInvestorSerializersList
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        investor = get_object_or_404(InvestorProfile, user=self.request.user)
+        return Notification.objects.filter(investor=investor.id).order_by('-created_at')
+
+
+class NotificationListView(generics.ListAPIView):
     """API view for all Notifications
     
     Filter fields:
