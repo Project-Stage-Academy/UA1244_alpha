@@ -14,11 +14,27 @@ spec:
     spec:
       containers:
       - name: flower
-        image: saberan/flower
-        imagePullPolicy: IfNotPresent
-        command: ["celery", "-A", "forum.celery.app", "flower"]
-        ports:
-        - containerPort: 5555
+        image: saberan/flower:latest
+        command:
+          - celery
+          - -A
+          - forum.celery
+          - flower
+
+        #command: ["celery", "-A", "forum.celery.app", "flower", "--loglevel=info"]
         envFrom:
-        - configMapRef:
-            name: flower-config
+          - configMapRef:
+              name: forum-config
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 5555
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 5555
+          initialDelaySeconds: 30
+          periodSeconds: 10
+

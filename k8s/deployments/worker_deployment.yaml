@@ -19,4 +19,4 @@ spec:
         command: ["celery", "-A", "forum.celery.app", "worker", "--loglevel=info"]
         envFrom:
         - configMapRef:
-            name: worker-config
+            name: forum-config
