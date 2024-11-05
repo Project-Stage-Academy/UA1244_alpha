@@ -19,8 +19,9 @@ class InvestmentTrackingSerializerCreate(serializers.ModelSerializer):
         return investment_tracking
 
 
-class InvestmentTrackingSerializerGet(serializers.ModelSerializer):
+class ListInvestmentTrackingSerializer(serializers.ModelSerializer):
+    startup_name = serializers.CharField(source='startup.name', read_only=True)
 
     class Meta:
         model = InvestmentTracking
-        fields = '__all__'
+        fields = ['startup', 'startup_name', 'saved_at']

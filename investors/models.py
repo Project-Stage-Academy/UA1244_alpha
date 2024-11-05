@@ -27,6 +27,10 @@ class InvestorProfile(models.Model):
 
     def __str__(self) -> str:
         return f"ID: {self.user.id}, Email: {self.user.email}, Stage: {self.get_preferred_stage_display()}"
+    
+    def get_user(self):
+        """get user id"""
+        return self.user
 
     def save(self, *args, **kwargs):
         if not self.pk:

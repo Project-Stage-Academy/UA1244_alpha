@@ -26,9 +26,10 @@ class CreateMessageCommand:
         self.mongo_repo.add_message(room_name, message)
         self.messege_event.trigger(message=message)
 
-        from notifications.models import Notification
+        from notifications.models import Notification, NotificationType
         await database_sync_to_async(Notification.objects.create)(
             investor_id=message.sender_id,
             startup_id=message.receiver_id,
-            notification_type=2
+            notification_type=NotificationType.MESSAGE,
+            message_id=message.oid
         )

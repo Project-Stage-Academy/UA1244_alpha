@@ -53,7 +53,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
-        fields = ('id', 'name', 'description')
+        fields = ('id', 'name')
 
 
 class CustomUserCreateSerializer(serializers.ModelSerializer):
