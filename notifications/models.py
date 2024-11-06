@@ -101,16 +101,18 @@ class Notification(models.Model):
     def get_associated_profile_url(self):
         """Get URL to associated profile depending on notification type"""
         startup = self.startup.user_id
-        startupt_url = f'{SITE_URL}{reverse("startup-profile-by-id", args=[startup.id])}'
+        startup_url = f'{SITE_URL}{reverse("startup-profile-by-id", args=[startup.id])}'
         investor = self.investor.user
         investor_url = f'{SITE_URL}{reverse("investor-profile-by-id", args=[investor.id])}'
         chat_room_url = f'{SITE_URL}communications/chatrooms/<your_room_oid>/messages/'
+
+        associated_url = None
 
         match self.notification_type:
             case NotificationType.FOLLOW:
                 associated_url = investor_url
             case NotificationType.UPDATE:
-                associated_url = startupt_url
+                associated_url = startup_url
             case NotificationType.MESSAGE:
                 associated_url = chat_room_url
 
