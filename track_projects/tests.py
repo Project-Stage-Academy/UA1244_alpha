@@ -121,25 +121,25 @@ class TrackProjectFollowViewTest(APITestCase):
         self.url = reverse('project-track', kwargs={'project_id': self.project.project_id})
 
         self.client = APIClient()
-        token_url = reverse('jwt-create')
+        token_url = reverse('token-create')
         response = self.client.post(token_url, {
             'email': 'john@gmail.com',
             'password': '123456pok',
-        })
+        }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         token = response.data['access']
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
     def test_follow_project_success(self):
-        response = self.client.post(self.url, data={})
+        response = self.client.post(self.url, data={},  format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('You successfully subscribed to project', response.data['message'])
         self.assertTrue(TrackProjects.objects.filter(investor=self.investor, project=self.project).exists())
 
     def test_follow_project_already_tracked(self):
-        self.client.post(self.url, data={})
-        
-        response = self.client.post(self.url, data={})
+        self.client.post(self.url, data={}, format='json')  
+    
+        response = self.client.post(self.url, data={}, format='json')  
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('error', response.data)
     
@@ -184,11 +184,12 @@ class InvestorsProjectsListViewTest(APITestCase):
     def setUp(self):
         self.client = APIClient()
         
-        token_url = reverse('jwt-create')  
+        token_url = reverse('token-create')  
         response = self.client.post(token_url, {
             'email': 'john@gmail.com',
             'password': '123456pok',
-        })
+        }, format='json')
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
         token = response.data['access']

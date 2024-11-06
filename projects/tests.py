@@ -329,7 +329,7 @@ class ProjectsViewTest(APITestCase):
 
         cls.user = User.objects.create_user(
             email="john@gmail.com",
-            password="123456pok",
+            password="StrongPass123!",
             first_name="John",
             last_name="Doe",
             user_phone="+1234567890"
@@ -338,7 +338,7 @@ class ProjectsViewTest(APITestCase):
 
         user_2 = User.objects.create_user(
             email="lin@gmail.com",
-            password="123456pok",
+            password="StrongPass123!",
             first_name="Lim",
             last_name="Non",
             user_phone="+1234567890"
@@ -379,12 +379,13 @@ class ProjectsViewTest(APITestCase):
         }
     
     def setUp(self):
+
         self.client = APIClient()
-        token_url = reverse('jwt-create')
+        token_url = reverse('token-create')
         response = self.client.post(token_url, {
-            'email': 'lin@gmail.com',
-            'password': '123456pok',
-        })
+        'email': 'lin@gmail.com',
+        'password': 'StrongPass123!',
+        }, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         token = response.data['access']
@@ -440,11 +441,12 @@ class ProjectsViewTest(APITestCase):
         Test that a user without the 'Startup' role cannot create a project.
         """
         client = APIClient()
-        token_url = reverse('jwt-create')
+        token_url = reverse('token-create')
         response = client.post(token_url, {
-            'email': 'john@gmail.com',
-            'password': '123456pok',
-        })
+        'email': 'john@gmail.com',
+        'password': 'StrongPass123!',
+        }, format='json')
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         token = response.data['access']
         client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
@@ -486,11 +488,11 @@ class ProjectsViewTest(APITestCase):
         Test that a user without the 'Startup' role cannot update a project.
         """
         client = APIClient()
-        token_url = reverse('jwt-create')
+        token_url = reverse('token-create')
         response = client.post(token_url, {
-            'email': 'john@gmail.com',
-            'password': '123456pok',
-        })
+        'email': 'john@gmail.com',
+        'password': 'StrongPass123!',
+        }, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         token = response.data['access']
