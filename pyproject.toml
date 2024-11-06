@@ -35,6 +35,9 @@ pylint = "^3.3.1"
 pylint-django = "^2.5.5"
 ipython = "^8.28.0"
 bandit = "^1.7.10"
+pytest = "^8.3.3"
+pytest-django = "^4.9.0"
+iniconfig = "^2.0.0"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,15 +1,13 @@
 import logging
 from dataclasses import dataclass
-from typing import Any, Mapping, Optional
+from typing import Optional
 
 from cryptography.fernet import Fernet
 from django.conf import settings
-from pymongo import MongoClient
-from pymongo.synchronous.collection import Collection
 from pymongo.errors import PyMongoError
 
 from communications.domain.entities.messages import ChatRoom, Message
-from .base import BaseRepository, BaseMessagesRepository, BaseChatsRepository
+from .base import BaseMessagesRepository, BaseChatsRepository
 from .filters import GetMessagesFilters
 
 logger = logging.getLogger('django')

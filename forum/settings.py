@@ -129,7 +129,13 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_THROTTLE_RATES': {
         'user': '1000/d',
-    }
+    },
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+    ],
 }
 
 # Password validation
@@ -321,7 +327,7 @@ TEST_EMAIL_2 = os.getenv('TEST_EMAIL_2')
 SITE_URL = os.getenv('SITE_URL')
 
 CORS_ALLOWED_ORIGINS = [
-    os.getenv('CORS_ALLOWED_ORIGINS'),
+    'http://localhost:5173',
 ]
 
 CORS_ALLOW_CREDENTIALS = True

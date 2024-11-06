@@ -8,7 +8,10 @@ from django.utils import timezone
 from communications.di_container import init_container
 from communications.repositories.base import BaseMessagesRepository
 from forum.settings import DEFAULT_FROM_EMAIL
-from .models import Notification, NotificationType
+from investors.models import InvestorProfile
+from startups.models import StartUpProfile
+from users.models import Role
+from .models import Notification, NotificationType, NotificationPreferences, RolesNotifications
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -101,3 +104,32 @@ def render_email_html_message(recipient, message, profile_url, profile_type):
     <p>Thank you for choosing Forum!</p>
     '''
     return html_message
+
+
+@shared_task
+def set_initial_notification_settings(instance_id, role_name):
+    """set initial notification settings for new profile
+
+    Fields:
+    - instance_id
+    - role_name
+    """
+    instance = None
+    try:
+        role = Role.objects.get(name=role_name)
+        if role_name == 'Startup':
+            instance = StartUpProfile.objects.get(id=instance_id)
+        elif role_name == 'Investor':
+            instance = InvestorProfile.objects.get(id=instance_id)
+    except (Role.DoesNotExist, InvestorProfile.DoesNotExist, StartUpProfile.DoesNotExist) as e:
+        logger.error(f'{e} Created {role_name} instance not found: {instance_id}')
+
+    allowed_notifications = RolesNotifications.objects.filter(role=role)
+
+    if instance:
+        for notification in allowed_notifications:
+            NotificationPreferences.objects.get_or_create(
+                user=instance.get_user(),
+                role=role,
+                notification_type=notification.notification_type
+            )
