@@ -1,10 +1,25 @@
 from django.urls import path
 
-from .views import (
-    InvestorProfileViewById
+from notifications.views import (
+    ProfileNotificationSettingsView,
+    ProfileNotificationSettingsByIDView
 )
+from .views import (
+    InvestorProfileViewById, InvestorProfileListView
+)
+
 
 urlpatterns = [
     path('investor-profile/<int:pk>/', InvestorProfileViewById.as_view(), 
          name='investor-profile-by-id'),
+    path('investors/', InvestorProfileListView.as_view(),
+         name='investors-list'),
+    path('investor/<int:pk>/notifications-settings/',
+         ProfileNotificationSettingsView.as_view(), 
+         name='startup-notification-settings'
+    ),
+    path('investor/<int:pk>/notifications-settings/<int:notification_type>/',
+         ProfileNotificationSettingsByIDView.as_view(), 
+         name='startup-notification-settings-by-id'
+    )
 ]
