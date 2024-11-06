@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import generics, filters, status
 
 from rest_framework import generics, filters, status
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -31,8 +32,7 @@ from .serializers import (
     ExtendedNotificationSerializer,
     NotificationPreferencesSerializer,
     RolesNotificationsSerializer,
-    NotificationSerializerPost,
-    NotificationForInvestorSerializersList
+    NotificationSerializerPost, NotificationForInvestorSerializersList
 )
 from .filters import NotificationFilter
 
