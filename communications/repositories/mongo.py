@@ -4,6 +4,7 @@ from typing import Any, Mapping, Optional
 
 from cryptography.fernet import Fernet
 from django.conf import settings
+from bson import ObjectId
 from pymongo import MongoClient
 from pymongo.synchronous.collection import Collection
 from pymongo.errors import PyMongoError
@@ -95,3 +96,18 @@ class MongoDBRepository(BaseRepository):
                 logger.warning(f"Failed to add message to chatroom ID: {room_id}. Room may not exist.")
         except PyMongoError as e:
             logger.error(f"Error adding message to chatroom ID {room_id}: {e}", exc_info=True)
+        if result.modified_count > 0:
+            logger.info("Message added successfully.")
+        else:
+            logger.warning(f"Failed to add message to chatroom ID: {room_id}. Room may not exist.")
+
+    def message_participants(self, message_id):
+        data = self._collection.find_one({"_id": ObjectId(str(message_id))})
+        if data:
+            return {
+                "recipient": data.get("recipient_id"),
+                "sender": data.get("sender_id")
+            }
+        else:
+            logger.warning(f"Message with ID {message_id} not found")
+            return None
