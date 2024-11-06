@@ -19,6 +19,7 @@ class MessageNotificationEvent(BaseEvent):
                 notification_type=NotificationType.MESSAGE,
                 investor_id=message.sender_id,
                 startup_id=message.receiver_id,
+                notification_type=2,
                 message_id=message.oid
             )
 

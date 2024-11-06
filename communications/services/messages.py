@@ -24,7 +24,7 @@ class CreateMessageCommand:
 
     async def handle(self, room_name: str, message: Message):
         self.mongo_repo.add_message(room_name, message)
-        self.messege_event.trigger(message=message)
+        await self.messege_event.trigger(message=message)
 
         from notifications.models import Notification, NotificationType
         await database_sync_to_async(Notification.objects.create)(

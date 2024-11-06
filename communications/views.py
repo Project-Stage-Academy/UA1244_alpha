@@ -50,6 +50,11 @@ class SendMessageView(APIView):
         try:
             logger.info(f"SendMessageView POST request received for room_id: {room_id}")
 
+            chat_room = mongo_repo.get_chatroom(room_id)
+            if chat_room is None:
+                logger.error(f"Chat room with ID {room_id} does not exist.")
+                return Response({'error': 'Chat room not found.'}, status=status.HTTP_404_NOT_FOUND)
+
             if 'sender_id' not in request.data:
                 logger.error("sender_id is required in the request data")
                 return Response({'error': 'sender_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
