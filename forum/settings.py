@@ -248,16 +248,13 @@ EMAIL_PORT = os.getenv('EMAIL_PORT')
 # }
 
 CACHES = {
-    # 'default': {
-    #     'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-    # },
+
     'default': {  # Окремий кеш для рефреш-токенів
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',  # Це адреса вашого Redis-сервера
+        'LOCATION': 'redis://127.0.0.1:6379/1',  
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            # Можна також додати пароль або інші опції, якщо потрібно
-            # 'PASSWORD': 'your_redis_password',
+
         }
     }
 }
