@@ -13,6 +13,11 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from datetime import timedelta
 
+
+
+
+from .logic import *
+
 logger = logging.getLogger('users')
 
 
@@ -51,13 +56,38 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                     'email': user.email,
                 }
             )
+            
+            # print(f'{user.id}: {tokens['refresh']}')
+            logger.info("Successfully generated token print",
+                extra={
+                    'user_id': user.id,
+                    'token': tokens['refresh'],
+                })
 
-            return Response({
+            test = store_refresh_token(user.id, str(tokens['refresh']), 60)
+            if not test:
+                test = "fff"
+            response = Response({
                 'refresh': str(tokens['refresh']),
                 'access': str(tokens['access']),
+                'test': str(test),
                 'user_id': user.id,
                 'email': user.email,
+                
             }, status=status.HTTP_200_OK)
+
+            print(f'{user.id}: {response['refresh']}')
+
+            
+
+            return response
+            
+            # return Response({
+            #     'refresh': str(tokens['refresh']),
+            #     'access': str(tokens['access']),
+            #     'user_id': user.id,
+            #     'email': user.email,
+            # }, status=status.HTTP_200_OK)
 
         except Exception as e:
             logger.error(
@@ -132,14 +162,22 @@ class LogoutView(APIView):
     """
     def post(self, request):
         refresh_token = request.data["refresh"]
+        
         if refresh_token:
             token = RefreshToken(refresh_token)
             token.set_exp(lifetime=timedelta(seconds=0))
+            request.user.id
+            print(f'{request.user.id}, {refresh_token} ')
+            is_valid = is_refresh_token_valid(request.user.id, refresh_token)
+            print("Is valid:", is_valid)
+            delete_refresh_token(request.user.id)
         else:
             return Response({"error": "The refresh token hadn't been provided"}, status=status.HTTP_400_BAD_REQUEST)
 
         access_token = request.auth.token
         ac_token = AccessToken(access_token)
         ac_token.set_exp(lifetime=timedelta(seconds=0))
+        is_valid = is_refresh_token_valid(request.user.id, refresh_token)
+        print("Is valid:", is_valid)
         return Response({"message": "User logged out successfully"}, status=status.HTTP_200_OK)
 

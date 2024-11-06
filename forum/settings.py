@@ -75,6 +75,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.cache.UpdateCacheMiddleware", # add this middleware 
+    "django.middleware.cache.FetchFromCacheMiddleware",
 ]
 
 ROOT_URLCONF = 'forum.urls'
@@ -239,11 +241,30 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 EMAIL_PORT = os.getenv('EMAIL_PORT')
 
+# CACHES = {
+#     'default': {
+#         'BACKEND': "django.core.cache.backends.locmem.LocMemCache",
+#     }
+# }
+
 CACHES = {
-    'default': {
-        'BACKEND': "django.core.cache.backends.locmem.LocMemCache",
+    # 'default': {
+    #     'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    # },
+    'default': {  # Окремий кеш для рефреш-токенів
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',  # Це адреса вашого Redis-сервера
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            # Можна також додати пароль або інші опції, якщо потрібно
+            # 'PASSWORD': 'your_redis_password',
+        }
     }
 }
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
+# SESSION_CACHE_ALIAS = 'refresh_token_cache'
 
 SIMPLE_JWT = {
     'USER_ID_FIELD': 'id',
