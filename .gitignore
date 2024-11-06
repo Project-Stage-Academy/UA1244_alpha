@@ -5,6 +5,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Ignore Kubernetes secret files
+*secret*.yml
+*secret*.yaml
+*configmap*.yaml
+
 # C extensions
 *.so
 

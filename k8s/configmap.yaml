@@ -3,14 +3,14 @@ kind: ConfigMap
 metadata:
   name: forum-config
 data:
-  DJANGO_ENV: "DEVELOPMENT"
-  DJANGO_LOG_LEVEL: "DEBUG"
-  DJANGO_ALLOWED_HOSTS: "*"
-  DB_NAME: "postgres"
-  DB_HOST: "db"
-  DB_PORT: "5432"
-  REDIS_HOST: "redis"
-  CELERY_BROKER_URL: "redis://redis:6379/0"
-  MONGO_URI: "mongodb://mongodb:27017"
-  MONGO_DB_NAME: "forum"
-  MONGO_COLLECTION_NAME: "chats"
+  DJANGO_ENV:
+  DJANGO_LOG_LEVEL:
+  DJANGO_ALLOWED_HOSTS:
+  DB_NAME:
+  DB_HOST:
+  DB_PORT:
+  REDIS_HOST:
+  CELERY_BROKER_URL:
+  MONGO_URI:
+  MONGO_DB_NAME:
+  MONGO_COLLECTION_NAME:
