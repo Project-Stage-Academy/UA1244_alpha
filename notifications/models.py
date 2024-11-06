@@ -1,23 +1,19 @@
 import logging
 
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-from django.contrib.auth import get_user_model
 
 from forum.settings import SITE_URL
 from startups.models import StartUpProfile
 from investors.models import InvestorProfile
 from users.models import Role
-from communications import init_container, MongoDBRepository
-
 
 User = get_user_model()
 logger = logging.getLogger('django')
 
-container = init_container()
-mongo_container = container.resolve(MongoDBRepository)
 
 class NotificationType(models.IntegerChoices):
     """Notification type class (IntegerChoices)
@@ -40,14 +36,16 @@ class NotificationStatus(models.IntegerChoices):
     UNREAD = 0, _('Unread')
     READ = 1, _('Read')
 
+
 class NotificationDeliveryStatus(models.IntegerChoices):
-    """Notification delivary status class (IntegerChoices)
+    """Notification delivery status class (IntegerChoices)
     
     - FAILED: 0
     - SENT: 1
     """
     FAILED = 0, _('Failed')
     SENT = 1, _('Sent')
+
 
 class Notification(models.Model):
     """Notification model
@@ -58,7 +56,7 @@ class Notification(models.Model):
     - investor(ForeignKey): associated investor's id
     - startup(ForeignKey): associated startup's id
     - message_id(CharField): associated message id
-    - delivery_status(BooleanField): notification delivary status (sent/failed)
+    - delivery_status(BooleanField): notification delivery status (sent/failed)
     - created_at(DateTimeField)
     - sent_at(DateTimeField)
     - read_at(DateTimeField)
@@ -69,9 +67,9 @@ class Notification(models.Model):
         choices=NotificationStatus.choices, default=NotificationStatus.UNREAD)
     investor = models.ForeignKey(InvestorProfile, on_delete=models.CASCADE)
     startup = models.ForeignKey(StartUpProfile, on_delete=models.CASCADE)
-    message_id = models.CharField(max_length=24, blank=True, null=True)
+    message_id = models.CharField(max_length=36, blank=True, null=True)
     delivery_status = models.IntegerField(
-         choices=NotificationDeliveryStatus, blank=True, null=True)
+        choices=NotificationDeliveryStatus, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(blank=True, null=True)
     read_at = models.DateTimeField(blank=True, null=True)
@@ -79,7 +77,7 @@ class Notification(models.Model):
     def __str__(self):
         type_ = NotificationType(self.notification_type).label
         return f'{type_}: {self.investor} -> {self.startup}' \
-        + f' {self.sent_at if self.sent_at else ""}'
+            + f' {self.sent_at if self.sent_at else ""}'
 
     def set_read_status(self, read):
         """Set notification status to READ or UNREAD"""
@@ -106,6 +104,7 @@ class Notification(models.Model):
         startup_url = f'{SITE_URL}{reverse("startup-profile-by-id", args=[startup.id])}'
         investor = self.investor.user
         investor_url = f'{SITE_URL}{reverse("investor-profile-by-id", args=[investor.id])}'
+        chat_room_url = f'{SITE_URL}communications/chatrooms/<your_room_oid>/messages/'
 
         associated_url = None
 
@@ -115,90 +114,90 @@ class Notification(models.Model):
             case NotificationType.UPDATE:
                 associated_url = startup_url
             case NotificationType.MESSAGE:
-                return None
+                associated_url = chat_room_url
 
         return associated_url
 
-    def get_message_participants(self):
-        return mongo_container.message_participants(self.message_id)
 
-    def get_role_profile(self, role):
-        """get startup or investor fields by role name"""
-        profile_fields = {
-            'Investor': 'investor',
-            'Startup': 'startup'
-        }
-        profile = profile_fields.get(role)
-        if role:
-            return getattr(self, profile, None)
-        raise AttributeError(f'No attribute found for this role: {role}')
+def get_role_profile(self, role):
+    """get startup or investor fields by role name"""
+    profile_fields = {
+        'Investor': 'investor',
+        'Startup': 'startup'
+    }
+    profile = profile_fields.get(role)
+    if role:
+        return getattr(self, profile, None)
+    raise AttributeError(f'No attribute found for this role: {role}')
 
-    def get_notification_preferences(self):
-        """check email and in_app preferences for a notification"""
 
-        notification_preferences = {
-            'email': True,
-            'in_app': True
-        }
-        preferences = None
+def get_notification_preferences(self):
+    """check email and in_app preferences for a notification"""
+
+    notification_preferences = {
+        'email': True,
+        'in_app': True
+    }
+    preferences = None
+    try:
+        roles = RolesNotifications.objects.filter(
+            notification_type=self.notification_type)
+
+        if roles.count() > 1 and self.notification_type == NotificationType.MESSAGE:
+            if self.handle_message_preferences():
+                preferences = self.handle_message_preferences()
+
+        elif roles.count() == 1:
+            role = roles.first()
+            role_name = Role.objects.get(id=role.role_id).name
+            receiver_profile = self.get_role_profile(role_name)
+
+            logger.error(role.role_id, receiver_profile, receiver_profile.get_user(),
+                         Notification.notification_type)
+            preferences = NotificationPreferences.objects.get(
+                user_id=receiver_profile.get_user(),
+                role=role.role_id,
+                notification_type=self.notification_type,
+            )
+    except (Notification.DoesNotExist, RolesNotifications.DoesNotExist,
+            Role.DoesNotExist, NotificationPreferences.DoesNotExist) as e:
+        logger.error(
+            f'Notification or Role Notification or Role or Preferences object not found\n{e}')
+    except AttributeError as e:
+        logger.error(f'Invalid role {e}')
+
+    if preferences:
+        notification_preferences['email'] = preferences.email
+        notification_preferences['in_app'] = preferences.in_app
+
+    return notification_preferences
+
+
+def handle_message_preferences(self):
+    """get preferences for message notifications"""
+    preferences = None
+    participants = self.get_message_participants()
+
+    if participants:
+        receiver_user_id = participants.get('receiver_id')
+
         try:
-            roles = RolesNotifications.objects.filter(
-                notification_type=self.notification_type)
-
-            if roles.count() > 1 and self.notification_type == NotificationType.MESSAGE:
-                if self.handle_message_preferences():
-                    preferences = self.handle_message_preferences()
-
-            elif roles.count() == 1:
-                role = roles.first()
-                role_name = Role.objects.get(id=role.role_id).name
-                receiver_profile = self.get_role_profile(role_name)
-
-                logger.error(role.role_id, receiver_profile, receiver_profile.get_user(),
-                             Notification.notification_type)
-                preferences = NotificationPreferences.objects.get(
-                    user_id=receiver_profile.get_user(),
-                    role=role.role_id,
+            receiver_user = User.objects.get(id=receiver_user_id)
+            roles = receiver_user.roles.all()
+            if roles.exists():
+                allowed_notifications = RolesNotifications.objects.filter(
                     notification_type=self.notification_type,
+                    role__in=roles
                 )
-        except (Notification.DoesNotExist, RolesNotifications.DoesNotExist,
-                Role.DoesNotExist, NotificationPreferences.DoesNotExist) as e:
-            logger.error(
-                f'Notification or Role Notification or Role or Preferences object not found\n{e}')
-        except AttributeError as e:
-            logger.error(f'Invalid role {e}')
-
-        if preferences:
-            notification_preferences['email'] = preferences.email
-            notification_preferences['in_app'] = preferences.in_app
-
-        return notification_preferences
-
-    def handle_message_preferences(self):
-        """get preferences for message notifications"""
-        preferences = None
-        participants = self.get_message_participants()
-
-        if participants:
-            receiver_user_id = participants.get('receiver_id')
-
-            try:
-                receiver_user = User.objects.get(id=receiver_user_id)
-                roles = receiver_user.roles.all()
-                if roles.exists():
-                    allowed_notifications = RolesNotifications.objects.filter(
-                            notification_type=self.notification_type,
-                            role__in=roles
+                if allowed_notifications.exists():
+                    preferences = NotificationPreferences.get(
+                        user_id=receiver_user_id,
+                        notification_type=self.notification_type
                     )
-                    if allowed_notifications.exists():
-                        preferences = NotificationPreferences.get(
-                            user_id=receiver_user_id,
-                            notification_type=self.notification_type
-                        )
-            except User.DoesNotExist:
-                logger.error(f'User with id {receiver_user_id} not found')
+        except User.DoesNotExist:
+            logger.error(f'User with id {receiver_user_id} not found')
 
-        return preferences
+    return preferences
 
 
 class RolesNotifications(models.Model):
@@ -207,7 +206,7 @@ class RolesNotifications(models.Model):
     Fields:
     - role (ForeignKey): role id
     - notification_type(IntegerField): notification type from NotificationType Integerchoices class
-    
+
     Default (fixtures):
     - Startup: 1 (FOLLOW), 2 (MESSAGE)
     - Investor: 2 (MESSAGE), 3 (UPDATE)"""

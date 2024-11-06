@@ -7,6 +7,7 @@ from uuid import uuid4
 
 logger = logging.getLogger('django')
 
+
 @dataclass
 class BaseEntity(ABC):
     oid: str = field(

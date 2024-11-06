@@ -1,27 +1,23 @@
 import logging
-from smtplib import SMTPException
-from celery import shared_task
 
-from django.core.mail import send_mail
+from celery import shared_task
 from django.contrib.auth import get_user_model
-from django.forms import ValidationError
+from django.core.mail import send_mail
 from django.utils import timezone
 
+from communications.di_container import init_container
+from communications.repositories.base import BaseMessagesRepository
 from forum.settings import DEFAULT_FROM_EMAIL
-from users.models import Role
 from investors.models import InvestorProfile
 from startups.models import StartUpProfile
-from .models import (
-    Notification,
-    NotificationType,
-    NotificationPreferences,
-    RolesNotifications
-)
-
+from users.models import Role
+from .models import Notification, NotificationType, NotificationPreferences, RolesNotifications
 
 User = get_user_model()
-logger = logging.getLogger('django')
+logger = logging.getLogger(__name__)
 
+container = init_container()
+mongo_repo: BaseMessagesRepository = container.resolve(BaseMessagesRepository)
 
 @shared_task
 def create_notification(investor_id, startup_id, type_, message_id=None):
@@ -33,68 +29,57 @@ def create_notification(investor_id, startup_id, type_, message_id=None):
             startup_id=startup_id,
             message_id=message_id
         )
-        logger.debug('Notification created successfully')
-    except (ValidationError) as e:
-        logger.error(f'Error occured while creating notification: {e}')
+    except Exception as e:
+        print(e)
+
 
 @shared_task(bind=True, max_retries=3)
 def send_notification_email(self, notification_id):
     """Send notification via email
-    
+
     Parameters:
     - notification_id
     """
     notification = Notification.objects.get(id=notification_id)
     associated_profile_url = notification.get_associated_profile_url()
-    startup = notification.startup.get_user()
-    investor = notification.investor.get_user()
-    recipient = None
+    startup = notification.startup.user_id
+    startup_name = notification.startup.name
+    investor = notification.investor.user
 
     match notification.notification_type:
         case NotificationType.FOLLOW:
             recipient = startup
             subject = 'Forum: New Follower'
-            message = 'A new investor has started following you.'
+            message = 'Another investor has started following you.'
             html_message = render_email_html_message(
                 recipient, message, associated_profile_url, 'investor')
 
         case NotificationType.UPDATE:
             recipient = investor
             subject = 'Forum: Startup Profile Update'
-            message = f'The startup [{notification.startup.name}] ' \
-                + 'you are following has new updates.'
+            message = f'Startup Profile [{startup_name}] you are following has new updates.'
             html_message = render_email_html_message(
                 recipient, message, associated_profile_url, 'startup')
 
         case NotificationType.MESSAGE:
-            if notification.message_id:
-                participants = notification.get_message_participants()
-                if participants:
-                    recipient.get('receiver_id')
-                    subject = 'Forum: New Message'
-                    message = f'You have new message.'
-                    html_message = render_email_html_message(
-                        recipient, message, profile_url=None, profile_type=None, include_link=False)
-                    logger.debug(f'message participants retrieved: {participants}')
-                else:
-                    logger.error('Failed to get message participants')
-            else:
-                logger.error('Invalid message_id')
+            message = mongo_repo.get_message_by_id(notification.message_id)
+            receiver = User.objects.get(id=message.receiver_id)
+            recipient = receiver.email
+            subject = 'Forum: New message'
+            message = 'You have a new message'
+            html_message = render_email_html_message(
+                recipient, message, associated_profile_url, 'startup')
 
     try:
-        if recipient:
-            recipient_email = recipient.email
-            send_mail(subject=subject, message=message, from_email=DEFAULT_FROM_EMAIL,
-                    recipient_list=[recipient_email], html_message=html_message,
-                    fail_silently=False)
-            notification.sent_at = timezone.now()
-            notification.save()
-            logging.info(f'email sent successfully: {notification.sent_at}')
-        else:
-            logger.error('Error fetching recipient')
+        recipient_email = str(recipient)
+        send_mail(subject=subject, message=message, from_email=DEFAULT_FROM_EMAIL,
+                  recipient_list=[recipient_email], html_message=html_message,
+                  fail_silently=False)
+        notification.sent_at = timezone.now()
+        notification.save()
 
-    except SMTPException as e:
-        logger.error(f'Error when sending notification email: {e}')
+    except Exception as e:
+        logger.error('Error when sending notification email: {e}')
         try:
             raise self.retry(exc=e, countdown=30)
         except self.MaxRetriesExceededError:
@@ -103,20 +88,19 @@ def send_notification_email(self, notification_id):
         notification.update_delivery_status(sent=True)
 
 
-def render_email_html_message(recipient, message, profile_url, profile_type, include_link=True):
+def render_email_html_message(recipient, message, profile_url, profile_type):
     """Render email html_message with custom
-    
+
     Parameters:
     - recipient
     - message
     - profile_url
     - profile_type
     """
-    link_to_profile = f"<p><a href={profile_url}>View {profile_type}'s profile</a></p>"
     html_message = f'''
-    <p>Hello, {recipient.get_full_name()}</p>
+    <p>Hello, {recipient}</p>
     <p>{message}</p>
-    {link_to_profile if include_link else ''}
+    <p><a href={profile_url}>View {profile_type}'s profile</a></p>
     <p>Thank you for choosing Forum!</p>
     '''
     return html_message
@@ -125,7 +109,7 @@ def render_email_html_message(recipient, message, profile_url, profile_type, inc
 @shared_task
 def set_initial_notification_settings(instance_id, role_name):
     """set initial notification settings for new profile
-    
+
     Fields:
     - instance_id
     - role_name
