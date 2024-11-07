@@ -22,21 +22,20 @@ class CreateMessageCommand(BaseCommand):
     messege_event: BaseEvent
     chat_query: ChatRoomQuery
 
-    def handle(self, user_id: int, room_oid: str, message_data: dict) -> Message:
+    async def handle(self, user_id: int, room_oid: str, message_data: str) -> Message:
         chat = self.chat_query.handle(room_oid)
 
         if user_id != chat.sender_id:
             chat.sender_id, chat.receiver_id = user_id, chat.sender_id
 
         message = Message(
-            content=Text(message_data['content']),
+            content=Text(message_data),
             sender_id=chat.sender_id,
             receiver_id=chat.receiver_id,
-            read_at=message_data.get('read_at')
         )
 
         self.mongo_repo.create_message(room_oid, message)
-        self.messege_event.trigger(message=message, chat=chat)
+        await self.messege_event.trigger(message=message, chat=chat)
 
         return message
 

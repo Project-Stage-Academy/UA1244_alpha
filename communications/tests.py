@@ -4,15 +4,14 @@ from django.test import TransactionTestCase
 from django.contrib.auth.models import AnonymousUser
 from investors.models import InvestorProfile
 from startups.models import StartUpProfile
-from .serializers import mongo_container
 from users.models import User
 from .consumers import ChatConsumer
 from django.urls import reverse
-from communications import MongoDBRepository
 from rest_framework import status
 from rest_framework.test import APITestCase
-from communications import init_container
-from communications.entities.messages import ChatRoom, Message
+
+from .di_container import init_container
+from .domain.entities.messages import ChatRoom, Message
 
 
 class ChatConsumerTest(TransactionTestCase):
