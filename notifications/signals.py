@@ -4,6 +4,8 @@ from django.dispatch import receiver
 from investment_tracking.models import InvestmentTracking
 from investors.models import InvestorProfile
 from startups.models import StartUpProfile
+from track_projects.models import TrackProjects
+from projects.models import Project
 from .models import (
     Notification,
     NotificationType,
@@ -16,12 +18,23 @@ from .tasks import (
 
 
 @receiver(post_save, sender=InvestmentTracking)
-def create_notification_on_investor_follow(sender, instance, created, **kwargs):
+def create_notification_on_investor_follow_startup(sender, instance, created, **kwargs):
     """Create a notification when an investor starts following a startup"""
     if created:
         create_notification.delay(
             investor_id=instance.investor.id,
             startup_id=instance.startup.id,
+            type_=NotificationType.FOLLOW
+        )
+
+@receiver(post_save, sender=TrackProjects)
+def create_notification_on_investor_follow_project(sender, instance, created, **kwargs):
+    """Create a notification when an investor starts following a project"""
+    if created and hasattr(instance, 'project') and instance.project:
+        create_notification.delay(
+            investor_id=instance.investor.id,
+            startup_id=instance.project.startup.id,
+            project_id=instance.project.project_id,
             type_=NotificationType.FOLLOW
         )
 
@@ -50,12 +63,23 @@ def setup_notification_settings(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=StartUpProfile)
 def create_notification_on_startup_update(sender, instance, **kwargs):
-    """Create notifications for investor when startyp was updated"""
-
+    """Create notifications for investor when startup is updated"""
     tracking = InvestmentTracking.objects.filter(startup=instance)
     for track in tracking:
         create_notification.delay(
             investor_id=track.investor.id,
             startup_id=instance.id,
+            type_=NotificationType.UPDATE
+        )
+
+@receiver(post_save, sender=Project)
+def create_notification_on_project_update(sender, instance, **kwargs):
+    """Create notifications for investor when project is updated"""
+    tracking = TrackProjects.objects.filter(project=instance)
+    for track in tracking:
+        create_notification.delay(
+            investor_id=track.investor.id,
+            startup_id=instance.startup.id,
+            project_id=instance.project_id,
             type_=NotificationType.UPDATE
         )

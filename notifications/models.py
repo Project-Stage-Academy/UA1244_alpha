@@ -10,6 +10,7 @@ from forum.settings import SITE_URL
 from startups.models import StartUpProfile
 from investors.models import InvestorProfile
 from users.models import Role
+from projects.models import Project
 
 User = get_user_model()
 logger = logging.getLogger('django')
@@ -55,6 +56,7 @@ class Notification(models.Model):
     - status(IntegerField): notification status (unread/read)
     - investor(ForeignKey): associated investor's id
     - startup(ForeignKey): associated startup's id
+    - project(ForeignKey): associated project's id
     - message_id(CharField): associated message id
     - delivery_status(BooleanField): notification delivery status (sent/failed)
     - created_at(DateTimeField)
@@ -67,7 +69,10 @@ class Notification(models.Model):
         choices=NotificationStatus.choices, default=NotificationStatus.UNREAD)
     investor = models.ForeignKey(InvestorProfile, on_delete=models.CASCADE)
     startup = models.ForeignKey(StartUpProfile, on_delete=models.CASCADE)
-    message_id = models.CharField(max_length=36, blank=True, null=True)
+
+    project = models.ForeignKey(Project, blank=True, null=True, on_delete=models.CASCADE)
+    message_id = models.CharField(max_length=24, blank=True, null=True)
+    
     delivery_status = models.IntegerField(
         choices=NotificationDeliveryStatus, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -76,6 +81,8 @@ class Notification(models.Model):
 
     def __str__(self):
         type_ = NotificationType(self.notification_type).label
+        if self.project:
+            return f'{type_}: {self.investor} -> {self.project} {self.sent_at if self.sent_at else ""}'
         return f'{type_}: {self.investor} -> {self.startup}' \
             + f' {self.sent_at if self.sent_at else ""}'
 
@@ -104,15 +111,22 @@ class Notification(models.Model):
         startup_url = f'{SITE_URL}{reverse("startup-profile-by-id", args=[startup.id])}'
         investor = self.investor.user
         investor_url = f'{SITE_URL}{reverse("investor-profile-by-id", args=[investor.id])}'
-        chat_room_url = f'{SITE_URL}communications/chatrooms/<your_room_oid>/messages/'
 
+        if self.project:
+            project_url = f'{SITE_URL}{reverse("project-by-id", args=[self.project.project_id])}' 
+            
+        chat_room_url = f'{SITE_URL}communications/chatrooms/<your_room_oid>/messages/'
         associated_url = None
 
+        
         match self.notification_type:
             case NotificationType.FOLLOW:
                 associated_url = investor_url
             case NotificationType.UPDATE:
+                if self.project:
+                    associated_url = project_url
                 associated_url = startup_url
+
             case NotificationType.MESSAGE:
                 associated_url = chat_room_url
 
