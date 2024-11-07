@@ -15,26 +15,13 @@ spec:
       containers:
       - name: flower
         image: saberan/flower:latest
-        command:
-          - celery
-          - -A
-          - forum.celery
-          - flower
-
-        #command: ["celery", "-A", "forum.celery.app", "flower", "--loglevel=info"]
-        envFrom:
-          - configMapRef:
-              name: forum-config
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 5555
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 5555
-          initialDelaySeconds: 30
-          periodSeconds: 10
-
+        ports:
+          - containerPort: 5555
+        env:
+          - name: FLOWER_PORT
+            value: "5555"
+          - name: REDIS_HOST
+            value: redis
+          - name: REDIS_PORT
+            value: "6379"
+        command: ["celery", "-A", "forum.celery.app", "flower", "--broker=redis://$(REDIS_HOST):$(REDIS_PORT)/0"]
