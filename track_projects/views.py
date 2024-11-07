@@ -7,6 +7,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from django.db import IntegrityError
+import uuid
 
 from .models import TrackProjects
 from projects.models import Project
@@ -37,18 +39,38 @@ class TrackProjectFollowView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         logger.info(f"Investor {request.user.id} is attempting to follow a project.")
-        project = get_object_or_404(Project, project_id=self.kwargs["project_id"])
-        investor_profile = get_object_or_404(InvestorProfile, user=request.user)
 
+        project = Project.objects.filter(project_id=self.kwargs["project_id"]).first()
+        investor_profile = InvestorProfile.objects.filter(user=request.user).first()
+        if not project:
+            logger.error(f"Project not found")
+            return Response(
+                {'error': 'Project not found'},
+                status = status.HTTP_404_NOT_FOUND
+            )
+        
+        if not investor_profile:
+            logger.error(f"Investor not found")
+            return Response(
+                {'error': 'Investor not found'},
+                status = status.HTTP_404_NOT_FOUND
+            )
+
+        if TrackProjects.objects.filter(investor=investor_profile, project=project).exists():
+            logger.error(f"Investor {request.user.id} is already tracking project {project.project_id}.")
+            return Response(
+                {"error": "You are already tracking this project."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         data = {
             'project': project.project_id,  
             'investor': investor_profile.id 
         }
-        
+
         data.update(request.data)
 
         serializer = self.get_serializer(data=data)
-        
         try:
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -58,10 +80,10 @@ class TrackProjectFollowView(generics.CreateAPIView):
                 status=status.HTTP_201_CREATED
             )
         except ValidationError as e:
-            logger.error(f"Validation error while investor {request.user.id} tried to follow project {project.project_id}. Error: {e.detail}")
+            logger.error(f"ValidationError: {e.detail}")
             return Response(
                 {'error': 'Invalid data', 
-                 'more information': e.detail},
+                 'details': e.detail},
                  status=status.HTTP_400_BAD_REQUEST
             )
 

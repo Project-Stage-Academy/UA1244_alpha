@@ -9,6 +9,7 @@ from startups.models import StartUpProfile
 from django.test import TestCase
 from django.utils import timezone
 from unittest.mock import patch
+import uuid
 
 User = get_user_model()
 
@@ -85,8 +86,13 @@ class TrackProjectsModelTest(TestCase):
 
 
 class TrackProjectFollowViewTest(APITestCase):
+    """
+    Test suite for tracking projects and following them.
+    """
+
     @classmethod
     def setUpTestData(cls):
+
         cls.user = User.objects.create_user(
             email="john@gmail.com",
             password="123456pok",
@@ -114,6 +120,9 @@ class TrackProjectFollowViewTest(APITestCase):
         )
 
     def setUp(self):
+        """
+        Set up the project to be tracked and authenticate the test client with a token for the investor.
+        """
         self.project = Project.objects.create(
             startup=self.startup, title='Prj1', risk=0.5,
             description='...', business_plan='https://google.com',
@@ -131,23 +140,45 @@ class TrackProjectFollowViewTest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
     def test_follow_project_success(self):
+        """
+        Test successfully following a project.
+        """
         response = self.client.post(self.url, data={},  format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('You successfully subscribed to project', response.data['message'])
         self.assertTrue(TrackProjects.objects.filter(investor=self.investor, project=self.project).exists())
 
     def test_follow_project_already_tracked(self):
+        """
+        Test trying to follow a project that is already being tracked. 
+        """
         self.client.post(self.url, data={}, format='json')  
     
         response = self.client.post(self.url, data={}, format='json')  
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('error', response.data)
+        self.assertEqual(response.data['error'], 'You are already tracking this project.')
     
+    def test_follow_project_not_found(self):
+        """
+        Test trying to follow a non-existent project. 
+        """
+        non_existent_uuid = uuid.uuid4()
+        test_url = reverse('project-track', kwargs={'project_id': str(non_existent_uuid)})
+        response = self.client.post(test_url, data={}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn('error', response.data)
+        self.assertEqual(response.data['error'], 'Project not found')
+
 
 class InvestorsProjectsListViewTest(APITestCase):
+    """
+    Test suite for listing projects that the investor is following.
+    """
+
     @classmethod
     def setUpTestData(cls):
-       
+
         cls.user = User.objects.create_user(
             email="john@gmail.com",
             password="123456pok",
@@ -182,6 +213,7 @@ class InvestorsProjectsListViewTest(APITestCase):
         TrackProjects.objects.create(investor=cls.investor, project=cls.project)
 
     def setUp(self):
+        
         self.client = APIClient()
         
         token_url = reverse('token-create')  
@@ -198,6 +230,9 @@ class InvestorsProjectsListViewTest(APITestCase):
         self.list_projects_url = reverse('track-project-list')
 
     def test_list_followed_projects(self):
+        """
+        Test listing all the projects that the investor is currently following.
+        """
         response = self.client.get(self.list_projects_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreater(len(response.data), 0) 
+        self.assertGreater(len(response.data), 0)

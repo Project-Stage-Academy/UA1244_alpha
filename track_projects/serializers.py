@@ -1,8 +1,5 @@
-import logging
 from rest_framework import serializers
 from .models import TrackProjects
-
-logger = logging.getLogger('django')
 
 class TrackProjectSerializerCreate(serializers.ModelSerializer):
     """

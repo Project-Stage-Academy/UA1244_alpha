@@ -94,7 +94,12 @@ class CreateProjectsView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         logger.info(f"User {request.user.id} attempting to create a project")
-        startup = get_object_or_404(StartUpProfile, id=request.data["startup"])
+        startup_id = request.data.get("startup")
+        startup = StartUpProfile.objects.filter(id=startup_id).first()
+        
+        if not startup:
+            return Response({"error": "Startup not found."}, status=status.HTTP_404_NOT_FOUND)
+
         if startup.user_id.id != request.user.id:
             logger.warning(f"User {request.user.id} does not have permission to create a project for startup {startup.id}")
             return Response(
@@ -105,10 +110,7 @@ class CreateProjectsView(generics.CreateAPIView):
             response = super().create(request, *args, **kwargs)
             logger.info(f"Project created successfully for startup {startup.id}")
             return Response(
-                {
-                    "message": "New project created successfully",
-                    "data": response.data,
-                },
+                {"message": "New project created successfully", "data": response.data},
                 status=status.HTTP_201_CREATED,
             )
         except ValidationError as e:
@@ -142,14 +144,7 @@ class UpdateProjectView(generics.UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         logger.info(f"User {request.user.id} attempting to update project {self.kwargs['pk']}")
-        try:
-            project = self.get_object()
-        except Http404:
-            logger.error(f"Project {self.kwargs['pk']} not found", exc_info=True)
-            return Response(
-                {"error": "This project doesn't exist"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        project = self.get_object()
 
         if project.startup.user_id != request.user:
             logger.warning(f"User {request.user.id} does not have permission to update project {self.kwargs['pk']}")
@@ -157,14 +152,12 @@ class UpdateProjectView(generics.UpdateAPIView):
                 {"error": "You do not have permission to update this project."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+
         try:
             response = super().update(request, *args, **kwargs)
             logger.info(f"Project {self.kwargs['pk']} updated successfully")
             return Response(
-                {
-                    "message": "Project was updated successfully",
-                    "data": response.data,
-                },
+                {"message": "Project was updated successfully", "data": response.data},
                 status=status.HTTP_200_OK,
             )
         except ValidationError as e:
