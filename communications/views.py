@@ -1,11 +1,10 @@
-# views.py
-
 import logging
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .domain.exceptions.base import ApplicationException
 from .permissions import IsOwnerOrRecipient
 from .logic import ChatRoomService, MessageService, ListMessagesService
 
@@ -24,7 +23,7 @@ class CreateChatRoomView(APIView):
             return Response({'room_oid': str(chat_room.oid)}, status=status.HTTP_201_CREATED)
         except ValueError as e:
             return Response(e.args[0], status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
+        except ApplicationException as e:
             logger.error(f"Failed to create chat room: {e}", exc_info=True)
             return Response(
                 {'error': 'Failed to create chat room due to server error.'},
@@ -44,7 +43,7 @@ class SendMessageView(APIView):
             return Response(data={'message_id': str(message.oid)}, status=status.HTTP_201_CREATED)
         except ValueError as e:
             return Response(data=e.args[0], status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
+        except ApplicationException as e:
             logger.error(f"Failed to send message in room {room_oid}: {e}", exc_info=True)
             return Response(
                 data={'error': 'Failed to send message due to server error.'},
@@ -56,7 +55,7 @@ class ListMessagesView(APIView):
     """
     View for listing all messages in a specific chat room.
     """
-    permission_classes = (IsOwnerOrRecipient,)
+    permission_classes = (IsOwnerOrRecipient, IsAuthenticated)
 
     def get(self, request, room_oid):
         try:
@@ -64,7 +63,7 @@ class ListMessagesView(APIView):
             return Response(message_list, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response(data=e.args[0], status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
+        except ApplicationException as e:
             logger.error(f"Failed to list messages for room {room_oid}: {e}", exc_info=True)
             return Response(
                 data={'error': 'Failed to retrieve messages due to server error.'},
