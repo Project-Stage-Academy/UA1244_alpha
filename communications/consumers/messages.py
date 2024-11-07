@@ -57,7 +57,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             logger.info(f"Message in room: {self.room_oid}")
 
-            message_entity = create_message_command.handle(
+            message_entity = await create_message_command.handle(
                 message_data=message,
                 room_oid=self.room_oid,
                 user_id=self.user_id

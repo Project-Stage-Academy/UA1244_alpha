@@ -22,7 +22,7 @@ class CreateMessageCommand(BaseCommand):
     messege_event: BaseEvent
     chat_query: ChatRoomQuery
 
-    def handle(self, user_id: int, room_oid: str, message_data: str) -> Message:
+    async def handle(self, user_id: int, room_oid: str, message_data: str) -> Message:
         chat = self.chat_query.handle(room_oid)
 
         if user_id != chat.sender_id:
@@ -35,7 +35,7 @@ class CreateMessageCommand(BaseCommand):
         )
 
         self.mongo_repo.create_message(room_oid, message)
-        self.messege_event.trigger(message=message, chat=chat)
+        await self.messege_event.trigger(message=message, chat=chat)
 
         return message
 

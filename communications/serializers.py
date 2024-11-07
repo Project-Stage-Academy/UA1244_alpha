@@ -8,6 +8,8 @@ class MessageSerializer(serializers.Serializer):
     """Serializer for representing messages in a chat"""
     content = serializers.CharField(max_length=1000)
     read_at = serializers.DateTimeField(required=False, allow_null=True)
+    sender_id = serializers.IntegerField()
+    receiver_id = serializers.IntegerField()
 
     def validate_content(self, value):
         """Custom validation for content field to check for XSS vulnerabilities."""
@@ -19,6 +21,19 @@ class MessageSerializer(serializers.Serializer):
             )
 
         return sanitized_content
+
+    def create(self, validated_data):
+        """Create a new Message instance from validated data and save it in MongoDB."""
+        mongo_messages_repo = self.context.get('mongo_messages_repo')
+        room_oid = self.context.get('room_oid')
+        if mongo_messages_repo is None:
+            raise serializers.ValidationError("Database repository not provided in serializer context.")
+
+        content = Text(validated_data.pop('content'))
+        message = Message(content=content, **validated_data)
+        mongo_messages_repo.create_message(room_oid, message)
+
+        return message
 
 
 class ChatRoomSerializer(serializers.Serializer):

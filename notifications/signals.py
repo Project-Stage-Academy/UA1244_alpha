@@ -25,6 +25,7 @@ def create_notification_on_investor_follow(sender, instance, created, **kwargs):
             type_=NotificationType.FOLLOW
         )
 
+
 @receiver(post_save, sender=Notification)
 def send_notification(sender, instance, created, **kwargs):
     """Send an email when new notification created"""
