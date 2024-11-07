@@ -2,7 +2,7 @@ import json
 import logging
 
 from channels.generic.websocket import AsyncWebsocketConsumer
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
 
 from communications.di_container import init_container
@@ -79,7 +79,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def chat_message(self, event):
         oid = event['oid']
-        message = cipher_suite.decrypt(event['message']).decode()
+
+        try:
+            message = cipher_suite.decrypt(event['message']).decode()
+        except (InvalidToken, ValueError) as e:
+            logger.error(f"Decryption failed for message oid {oid}: {e}", exc_info=True)
+            await self.send(text_data=json.dumps({
+                'error': 'Failed to decrypt message. Invalid or corrupted data.',
+                'oid': oid
+            }))
+            return
+
         sender_id = event['sender_id']
         receiver_id = event['receiver_id']
         created_at = event['created_at'].isoformat()
