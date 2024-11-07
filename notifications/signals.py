@@ -17,7 +17,6 @@ from .tasks import (
 )
 
 
-
 @receiver(post_save, sender=InvestmentTracking)
 def create_notification_on_investor_follow_startup(sender, instance, created, **kwargs):
     """Create a notification when an investor starts following a startup"""
