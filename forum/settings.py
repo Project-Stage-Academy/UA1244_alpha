@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'dashboard',
     'notifications',
     'common',
+    'track_projects',
 
     'djoser',
     'rest_framework',

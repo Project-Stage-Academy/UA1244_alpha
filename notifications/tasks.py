@@ -20,13 +20,14 @@ container = init_container()
 mongo_repo: BaseMessagesRepository = container.resolve(BaseMessagesRepository)
 
 @shared_task
-def create_notification(investor_id, startup_id, type_, message_id=None):
+def create_notification(investor_id, startup_id, type_, message_id=None, project_id=None):
     """Create notification instance"""
     try:
         Notification.objects.create(
             notification_type=type_,
             investor_id=investor_id,
             startup_id=startup_id,
+            project_id=project_id,
             message_id=message_id
         )
     except Exception as e:
@@ -42,9 +43,17 @@ def send_notification_email(self, notification_id):
     """
     notification = Notification.objects.get(id=notification_id)
     associated_profile_url = notification.get_associated_profile_url()
+
+    startup = notification.startup.get_user()
+    investor = notification.investor.get_user()
+    recipient = None
     startup = notification.startup.user_id
     startup_name = notification.startup.name
     investor = notification.investor.user
+    project = None
+    if notification.project:
+        project = notification.project.startup.user_id
+        project_title = notification.project.title
 
     match notification.notification_type:
         case NotificationType.FOLLOW:
@@ -53,6 +62,18 @@ def send_notification_email(self, notification_id):
             message = 'Another investor has started following you.'
             html_message = render_email_html_message(
                 recipient, message, associated_profile_url, 'investor')
+            if project:
+                recipient = project
+                subject = 'Forum: New Follower'
+                message = 'Another investor has started following your project.'
+                html_message = render_email_html_message(
+                    recipient, message, associated_profile_url, 'investor')
+            else:
+                recipient = startup
+                subject = 'Forum: New Follower'
+                message = 'Another investor has started following you.'
+                html_message = render_email_html_message(
+                    recipient, message, associated_profile_url, 'investor')
 
         case NotificationType.UPDATE:
             recipient = investor
@@ -60,6 +81,18 @@ def send_notification_email(self, notification_id):
             message = f'Startup Profile [{startup_name}] you are following has new updates.'
             html_message = render_email_html_message(
                 recipient, message, associated_profile_url, 'startup')
+            if project:
+                recipient = investor
+                subject = 'Forum: Project Update'
+                message = f'Project [{project_title}] you are following has new updates.'
+                html_message = render_email_html_message(
+                    recipient, message, associated_profile_url, 'project')
+            else:
+                recipient = investor
+                subject = 'Forum: Startup Profile Update'
+                message = f'Startup Profile [{startup_name}] you are following has new updates.'
+                html_message = render_email_html_message(
+                    recipient, message, associated_profile_url, 'startup')
 
         case NotificationType.MESSAGE:
             message = mongo_repo.get_message_by_id(notification.message_id)
