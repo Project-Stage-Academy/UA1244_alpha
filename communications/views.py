@@ -76,7 +76,7 @@ class SendMessageView(APIView):
                 message: Message = create_message_command.handle(
                     user_id=request.user.id,
                     room_oid=room_oid,
-                    message_data=request.data
+                    message_data=request.data.get('content')
                 )
                 logger.info(f"Message sent with ID: {message.oid} in room: {room_oid}")
                 return Response(data={'message_id': str(message.oid)}, status=status.HTTP_201_CREATED)

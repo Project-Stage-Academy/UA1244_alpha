@@ -2,6 +2,8 @@ import json
 import logging
 
 from channels.generic.websocket import AsyncWebsocketConsumer
+from cryptography.fernet import Fernet
+from django.conf import settings
 
 from communications.di_container import init_container
 from communications.domain.entities.messages import Message
@@ -16,6 +18,8 @@ logger = logging.getLogger(__name__)
 container = init_container()
 create_message_command: CreateMessageCommand = container.resolve(CreateMessageCommand)
 get_chat_room_query: ChatRoomQuery = container.resolve(ChatRoomQuery)
+
+cipher_suite = Fernet(settings.ENCRYPTION_KEY)
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -53,7 +57,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             logger.info(f"Message in room: {self.room_oid}")
 
-            create_message_command.handle(
+            message_entity = create_message_command.handle(
                 message_data=message,
                 room_oid=self.room_oid,
                 user_id=self.user_id
@@ -63,15 +67,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.room_group_name,
                 {
                     'type': 'chat_message',
-                    'message': message,
+                    'oid': message_entity.oid,
+                    'message': message_entity.content,
+                    'sender_id': message_entity.sender_id,
+                    'receiver_id': message_entity.receiver_id,
+                    'created_at': message_entity.created_at,
                 }
             )
         except ApplicationException as e:
             logger.error(f"Error processing received message: {e}", exc_info=True)
 
     async def chat_message(self, event):
-        message = event['message']
+        oid = event['oid']
+        message = cipher_suite.decrypt(event['message']).decode()
+        sender_id = event['sender_id']
+        receiver_id = event['receiver_id']
+        created_at = event['created_at'].isoformat()
 
         await self.send(text_data=json.dumps({
+            'oid': oid,
             'message': message,
+            'sender_id': sender_id,
+            'receiver_id': receiver_id,
+            'created_at': created_at,
         }))
