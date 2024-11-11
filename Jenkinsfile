@@ -33,6 +33,7 @@ pipeline {
         stage('Copy Env Files') {
             steps {
                 script {
+                    sh 'sudo touch /var/lib/jenkins/workspace/Forum/.env'
                     sh 'sudo cp /var/.env /var/lib/jenkins/workspace/Forum/.env'
                 }
             }
