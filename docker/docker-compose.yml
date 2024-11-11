@@ -19,7 +19,7 @@ services:
       context: ./..
       dockerfile: front/Dockerfile
     ports:
-      - '5173:80'
+      - '5173:5173'
     depends_on:
       - forum_app
     networks:
