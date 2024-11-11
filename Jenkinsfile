@@ -18,7 +18,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git branch: 'develop', url: 'https://github.com/Project-Stage-Academy/UA1244_alpha.git'
+                git branch: 'deploy', url: 'https://github.com/Project-Stage-Academy/UA1244_alpha.git'
             }
         }
         stage('Debug') {
