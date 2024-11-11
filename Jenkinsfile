@@ -18,14 +18,14 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git branch: 'develop', url: 'https://github.com/Project-Stage-Academy/UA1244_alpha.git'
+                git branch: 'deploy', url: 'https://github.com/Project-Stage-Academy/UA1244_alpha.git'
             }
         }
         stage('Debug') {
             steps {
                 script {
                     sh 'ls -l /var'
-                    sh 'ls -l /var/lib/jenkins/workspace/backend'
+                    sh 'ls -l /var/lib/jenkins/workspace/Forum'
                 }
             }
         }
