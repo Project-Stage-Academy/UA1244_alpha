@@ -15,7 +15,7 @@ class WebSocketService {
             return;
         }
 
-        this.socket = new WebSocket(`ws://localhost:8001/ws/chat/${roomOid}/?token=${this.token}`);
+        this.socket = new WebSocket(`ws://34.116.196.137:8001/ws/chat/${roomOid}/?token=${this.token}`);
 
         this.socket.onopen = () => console.log('WebSocket connected');
         this.socket.onclose = () => console.log('WebSocket closed');

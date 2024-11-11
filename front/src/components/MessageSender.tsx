@@ -17,7 +17,7 @@ const MessageSender: React.FC<MessageSenderProps> = ({ roomOid }) => {
             return;
         }
 
-        const ws = new WebSocket(`ws://localhost:8001/ws/chat/${roomOid}/?token=${token}`);
+        const ws = new WebSocket(`ws://34.116.196.137:8001/ws/chat/${roomOid}/?token=${token}`);
         setSocket(ws);
 
         ws.onopen = () => {

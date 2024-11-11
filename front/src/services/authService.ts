@@ -1,7 +1,7 @@
 // src/services/authService.ts
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000/auth/jwt/create/';
+const API_URL = 'http://34.116.196.137:8000/auth/jwt/create/';
 
 interface AuthResponse {
     access: string; // JWT token

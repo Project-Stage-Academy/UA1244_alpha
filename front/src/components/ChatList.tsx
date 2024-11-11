@@ -23,7 +23,7 @@ const ChatList: React.FC<ChatListProps> = ({ currentUserId }) => {
             try {
                 const token = localStorage.getItem('token');
                 const response = await axios.get(
-                    `http://localhost:8000/communications/chatrooms/user_chats/`,
+                    `http://34.116.196.137:8000/communications/chatrooms/user_chats/`,
                     {
                         headers: { Authorization: `Bearer ${token}` },
                     }
@@ -52,7 +52,7 @@ const ChatList: React.FC<ChatListProps> = ({ currentUserId }) => {
                 <p>No chats available</p>
             )}
             <div className="create-chat-button">
-                <a href="http://localhost:5173/create-chat">
+                <a href="http://34.116.196.137:5173/create-chat">
                     <button>Create New Chat</button>
                 </a>
             </div>

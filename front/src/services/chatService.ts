@@ -1,7 +1,7 @@
 // src/services/chatService.ts
 import axios from 'axios';
 
-const CHAT_API_URL = 'http://localhost:8000/communications/chatrooms/';
+const CHAT_API_URL = 'http://34.116.196.137:8000/communications/chatrooms/';
 
 interface CreateChatRoomParams {
     title: string;

@@ -26,7 +26,7 @@ const MessageList: React.FC<MessageListProps> = ({ roomOid, currentUserId }) => 
             try {
                 const token = localStorage.getItem('token');
                 const response = await axios.get(
-                    `http://localhost:8000/communications/chatrooms/${roomOid}/messages/`,
+                    `http://34.116.196.137:8000/communications/chatrooms/${roomOid}/messages/`,
                     {
                         headers: { Authorization: `Bearer ${token}` },
                     }
@@ -44,7 +44,7 @@ const MessageList: React.FC<MessageListProps> = ({ roomOid, currentUserId }) => 
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        const ws = new WebSocket(`ws://localhost:8001/ws/chat/${roomOid}/?token=${token}`);
+        const ws = new WebSocket(`ws://34.116.196.137:8001/ws/chat/${roomOid}/?token=${token}`);
 
         ws.onmessage = (event) => {
             const newMessage: Message = JSON.parse(event.data);
@@ -64,7 +64,7 @@ const MessageList: React.FC<MessageListProps> = ({ roomOid, currentUserId }) => 
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        const notificationWs = new WebSocket(`ws://localhost:8001/ws/notifications/?token=${token}`);
+        const notificationWs = new WebSocket(`ws://34.116.196.137:8001/ws/notifications/?token=${token}`);
 
         notificationWs.onmessage = (event) => {
             const data = JSON.parse(event.data);

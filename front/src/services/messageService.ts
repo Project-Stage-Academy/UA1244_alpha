@@ -1,7 +1,7 @@
 // src/services/messageService.ts
 import axios from 'axios';
 
-const MESSAGE_API_URL = 'http://localhost:8000/messages/'; // Adjust this URL based on your API
+const MESSAGE_API_URL = 'http://34.116.196.137:8000/messages/'; // Adjust this URL based on your API
 
 // Exporting SendMessageParams so it can be used in other files
 export interface SendMessageParams {
