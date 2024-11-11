@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, Mapping, Any, List
+from typing import Optional, Mapping, Any, List, Dict
 
 from cryptography.fernet import Fernet
 from django.conf import settings
@@ -50,6 +50,10 @@ class BaseChatsRepository(BaseRepository):
     def get_chatroom(self, room_oid: str) -> Optional[ChatRoom]:
         """Retrieve a chatroom by its room_oid. Return None if not found."""
         pass
+
+    @abstractmethod
+    def get_user_chats(self, user_id: str) -> List[Dict]:
+        ...
 
 
 class BaseMessagesRepository(BaseRepository):

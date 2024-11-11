@@ -41,16 +41,16 @@ class ChatRoomSerializer(serializers.Serializer):
     a startup and an investor"""
 
     title = serializers.CharField()
-    sender_id = serializers.IntegerField()
     receiver_id = serializers.IntegerField()
 
     def create(self, validated_data):
         """Create a new ChatRoom instance and save it to MongoDB"""
         mongo_chats_repo = self.context.get('mongo_chats_repo')
+        user = self.context.get('user')
         if mongo_chats_repo is None:
             raise serializers.ValidationError("Database repository not provided in serializer context.")
 
-        chat_room = ChatRoom(**validated_data)
+        chat_room = ChatRoom(sender_id=user, **validated_data)
         mongo_chats_repo.create_chatroom(chat_room)
 
         return chat_room

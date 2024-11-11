@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from .domain.exceptions.base import ApplicationException
 from .permissions import IsOwnerOrRecipient
-from .logic import ChatRoomService, MessageService, ListMessagesService
+from .logic import ChatRoomService, MessageService, ListMessagesService, ListUserChatsService
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class CreateChatRoomView(APIView):
 
     def post(self, request):
         try:
-            chat_room = ChatRoomService.create_chat_room(request.data)
+            chat_room = ChatRoomService.create_chat_room(request.data, request.user.id)
             return Response({'room_oid': str(chat_room.oid)}, status=status.HTTP_201_CREATED)
         except ValueError as e:
             return Response(e.args[0], status=status.HTTP_400_BAD_REQUEST)
@@ -67,5 +67,23 @@ class ListMessagesView(APIView):
             logger.error(f"Failed to list messages for room {room_oid}: {e}", exc_info=True)
             return Response(
                 data={'error': 'Failed to retrieve messages due to server error.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class ListUserChatsView(APIView):
+    """API view to list all chat rooms for a user."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            chat_rooms = ListUserChatsService.list_user_chats(request.user.id)
+            return Response(chat_rooms, status=status.HTTP_200_OK)
+        except ValueError as e:
+            return Response(data=e.args[0], status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Failed to retrieve chat rooms: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to retrieve chat rooms due to server error.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

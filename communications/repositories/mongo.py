@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List, Dict
 
 from cryptography.fernet import Fernet
 from django.conf import settings
@@ -45,6 +45,24 @@ class MongoDBChatsRepositories(BaseChatsRepository):
         except PyMongoError as e:
             logger.error(f"Error retrieving chatroom: {e}", exc_info=True)
             return None
+
+    def get_user_chats(self, user_id: str) -> List[Dict]:
+        try:
+            chat_rooms = self._collection.find({
+                "$or": [{"sender_id": user_id}, {"receiver_id": user_id}]
+            }, {"messages": 0})
+
+            formatted_chat_rooms = []
+            for chat in chat_rooms:
+                if '_id' in chat:
+                    del chat['_id']
+
+                formatted_chat_rooms.append(ChatRoom(**chat).__dict__)
+
+            return formatted_chat_rooms
+        except PyMongoError as e:
+            logger.error(f"Error retrieving chat rooms for user_id {user_id}: {e}", exc_info=True)
+            return []
 
 
 @dataclass

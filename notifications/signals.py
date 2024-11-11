@@ -43,9 +43,7 @@ def create_notification_on_investor_follow_project(sender, instance, created, **
 def send_notification(sender, instance, created, **kwargs):
     """Send an email when new notification created"""
     if created:
-        preferences = instance.get_notification_preferences()
-        if preferences.get('email'):
-            send_notification_email.delay(notification_id=instance.id)
+        send_notification_email.delay(notification_id=instance.id)
 
 
 @receiver(post_save, sender=InvestorProfile)

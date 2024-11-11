@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
 
+from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
 from channels.layers import get_channel_layer
 from cryptography.fernet import Fernet
@@ -18,20 +19,19 @@ class MessageNotificationEvent(BaseEvent):
     async def trigger(self, message: Message, chat: ChatRoom):
         from notifications.models import Notification
         try:
-            await database_sync_to_async(Notification.objects.create)(
-                investor_id=chat.sender_id,
-                startup_id=chat.receiver_id,
+            sync_to_async(Notification.objects.create)(
                 notification_type=2,
                 message_id=message.oid
             )
 
-            logger.info(f"Notification object created for message from sender {chat.receiver_id}")
+            logger.info(f"Notification object created for message from sender {chat.sender_id}")
 
             channel_layer = get_channel_layer()
             await channel_layer.group_send(
                 f'notifications_{chat.receiver_id}',
                 {
                     'type': 'send_notification',
+                    'sender': f'From: {chat.sender_id}',
                     'notification':
                         f'New message: {cipher_suite.decrypt(message.content).decode()}',
                 }

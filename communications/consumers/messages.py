@@ -67,11 +67,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.room_group_name,
                 {
                     'type': 'chat_message',
-                    'oid': message_entity.oid,
-                    'message': message_entity.content,
-                    'sender_id': message_entity.sender_id,
-                    'receiver_id': message_entity.receiver_id,
-                    'created_at': message_entity.created_at,
+                    'oid': message_entity.get("oid"),
+                    'content': message_entity.get("content"),
+                    'sender_id': message_entity.get("sender_id"),
+                    'receiver_id': message_entity.get("receiver_id"),
+                    'created_at': message_entity.get("created_at"),
+                    'sender_name': message_entity.get('sender_name')
                 }
             )
         except ApplicationException as e:
@@ -81,7 +82,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         oid = event['oid']
 
         try:
-            message = cipher_suite.decrypt(event['message']).decode()
+            content = cipher_suite.decrypt(event['content']).decode()
         except (InvalidToken, ValueError) as e:
             logger.error(f"Decryption failed for message oid {oid}: {e}", exc_info=True)
             await self.send(text_data=json.dumps({
@@ -93,11 +94,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender_id = event['sender_id']
         receiver_id = event['receiver_id']
         created_at = event['created_at'].isoformat()
+        sender_name = event['sender_name']
 
         await self.send(text_data=json.dumps({
             'oid': oid,
-            'message': message,
+            'content': content,
             'sender_id': sender_id,
             'receiver_id': receiver_id,
             'created_at': created_at,
+            'sender_name': sender_name
         }))

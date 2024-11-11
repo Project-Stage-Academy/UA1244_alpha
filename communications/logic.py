@@ -1,11 +1,13 @@
 import logging
 from dataclasses import asdict
 
+from django.contrib.auth import get_user_model
+
+from communications.di_container import init_container
+from communications.repositories.base import BaseChatsRepository, BaseMessagesRepository
 from investors.models import InvestorProfile
 from startups.models import StartUpProfile
 from .serializers import MessageSerializer, ChatRoomSerializer
-from communications.repositories.base import BaseChatsRepository, BaseMessagesRepository
-from communications.di_container import init_container
 
 logger = logging.getLogger(__name__)
 
@@ -13,26 +15,26 @@ container = init_container()
 mongo_chats_repo: BaseChatsRepository = container.resolve(BaseChatsRepository)
 mongo_messages_repo: BaseMessagesRepository = container.resolve(BaseMessagesRepository)
 
+User = get_user_model()
+
 
 class ChatRoomService:
     """Service for handling chat room operations."""
 
     @staticmethod
-    def create_chat_room(data):
-        serializer = ChatRoomSerializer(data=data, context={'mongo_chats_repo': mongo_chats_repo})
+    def create_chat_room(data, user):
+        serializer = ChatRoomSerializer(data=data, context={'mongo_chats_repo': mongo_chats_repo, 'user': user})
 
         if not serializer.is_valid():
             logger.warning(f"Invalid data for creating chat room: {serializer.errors}")
             raise ValueError(serializer.errors)
 
-        sender_id = serializer.validated_data['sender_id']
         receiver_id = serializer.validated_data['receiver_id']
 
-        if not StartUpProfile.objects.filter(id=sender_id).exists():
-            raise ValueError({'error': 'Startup not found.'})
-
-        if not InvestorProfile.objects.filter(id=receiver_id).exists():
-            raise ValueError({'error': 'Investor not found.'})
+        user_exists = User.objects.filter(id__in=[receiver_id, user]).count()
+        if user_exists < 2:
+            missing_user = 'Sender' if user not in [receiver_id] else 'Receiver'
+            raise ValueError({'error': f"{missing_user} not found."})
 
         chat_room = serializer.save()
         logger.info(f"Chat room created with ID: {chat_room.oid}")
@@ -73,3 +75,16 @@ class ListMessagesService:
         )
         logger.info(f"Retrieved {len(message_list)} messages for room_oid: {room_oid}")
         return message_list
+
+
+class ListUserChatsService:
+    """Service for retrieving all chat rooms associated with a user."""
+
+    @staticmethod
+    def list_user_chats(user_id):
+        chat_rooms = mongo_chats_repo.get_user_chats(user_id)
+        if not chat_rooms:
+            raise ValueError({'error': 'No chat rooms found for this user.'})
+
+        logger.info(f"Retrieved {len(chat_rooms)} chat rooms for user_id: {user_id}")
+        return chat_rooms

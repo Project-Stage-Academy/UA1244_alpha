@@ -67,11 +67,11 @@ class Notification(models.Model):
     notification_type = models.IntegerField(choices=NotificationType.choices)
     status = models.IntegerField(
         choices=NotificationStatus.choices, default=NotificationStatus.UNREAD)
-    investor = models.ForeignKey(InvestorProfile, on_delete=models.CASCADE)
-    startup = models.ForeignKey(StartUpProfile, on_delete=models.CASCADE)
+    investor = models.ForeignKey(InvestorProfile, on_delete=models.CASCADE, blank=True, null=True)
+    startup = models.ForeignKey(StartUpProfile, on_delete=models.CASCADE, blank=True, null=True)
 
     project = models.ForeignKey(Project, blank=True, null=True, on_delete=models.CASCADE)
-    message_id = models.CharField(max_length=24, blank=True, null=True)
+    message_id = models.CharField(max_length=36, blank=True, null=True)
     
     delivery_status = models.IntegerField(
         choices=NotificationDeliveryStatus, blank=True, null=True)
