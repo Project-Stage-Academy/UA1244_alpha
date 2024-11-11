@@ -14,6 +14,15 @@ services:
       - backend-network
     restart: always
 
+  frontend:
+    build:
+      context: ./..
+      dockerfile: front/Dockerfile
+    ports:
+      - '5173:80'
+    depends_on:
+      - forum_app
+
   forum_app:
     container_name: forum_app
     build:

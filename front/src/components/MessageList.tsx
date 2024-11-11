@@ -83,7 +83,7 @@ const MessageList: React.FC<MessageListProps> = ({ roomOid, currentUserId }) => 
 
     // Automatically remove notifications after 2 seconds
     useEffect(() => {
-        const timers = notifications.map((_, index) =>
+        const timers = notifications.map(() =>
             setTimeout(() => {
                 setNotifications((prevNotifications) => prevNotifications.slice(1));
             }, 2000)
@@ -103,8 +103,8 @@ const MessageList: React.FC<MessageListProps> = ({ roomOid, currentUserId }) => 
     return (
         <div className="message-list">
             <div className="notifications">
-                {notifications.map((notification, index) => (
-                    <div key={index} className="notification">
+                {notifications.map((notification) => (
+                    <div key={notification} className="notification">
                         {notification}
                     </div>
                 ))}
