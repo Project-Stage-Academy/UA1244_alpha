@@ -6,15 +6,15 @@ pipeline {
     }
 
     stages {
-        stage('Clean Up Old Containers and Images') {
-            steps {
-                script {
-                    sh 'sudo docker-compose -f $COMPOSE_FILE down'
-                    sh 'sudo docker rm -f $(sudo docker ps -aq) || true'
-                    sh 'sudo docker rmi -f $(sudo docker images -aq) || true'
-                }
-            }
-        }
+        // stage('Clean Up Old Containers and Images') {
+        //     steps {
+        //         script {
+        //             sh 'sudo docker-compose -f $COMPOSE_FILE down'
+        //             sh 'sudo docker rm -f $(sudo docker ps -aq) || true'
+        //             sh 'sudo docker rmi -f $(sudo docker images -aq) || true'
+        //         }
+        //     }
+        // }
 
         stage('Checkout') {
             steps {
