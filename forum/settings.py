@@ -329,6 +329,7 @@ SITE_URL = os.getenv('SITE_URL')
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
+    'http://34.116.196.137:5173',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
