@@ -42,6 +42,7 @@ urlpatterns = [
     path('projects/', include('projects.urls')),
     path('communications/', include('communications.urls')),
     path('notifications/', include('notifications.urls')),
+    path('track_project/', include('track_projects.urls')),
     path('dashboard/', include('dashboard.urls')),
     path('investment_tracking/', include('investment_tracking.urls')),
     path('auth/', include('djoser.urls')),

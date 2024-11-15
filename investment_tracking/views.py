@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from investors.models import InvestorProfile
 from .serializers import InvestmentTrackingSerializerCreate, ListInvestmentTrackingSerializer
 
+
 def get_investor_profile(request):
     return get_object_or_404(InvestorProfile, user=request.user)
 
@@ -79,7 +80,6 @@ class InvestmentTrackingUnsaveView(APIView):
 
         investor_profile = get_investor_profile(request)
         logger.debug(f"Investor profile found: {investor_profile}")
-
         startup = get_object_or_404(StartUpProfile, id=startup_id)
         logger.debug(f"Startup profile found: {startup}")
 

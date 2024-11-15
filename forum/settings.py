@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'dashboard',
     'notifications',
     'common',
+    'track_projects',
 
     'djoser',
     'rest_framework',
@@ -64,10 +65,12 @@ INSTALLED_APPS = [
     'simple_history',
     'channels',
     'drf_yasg',
+    'corsheaders',
 
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -227,12 +230,12 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console', 'file'],
-            'level': 'INFO',
+            'level': 'WARNING',
             'propagate': True,
         },
         'users': {
             'handlers': ['console', 'file'],
-            'level': 'INFO',
+            'level': 'WARNING',
             'propagate': True,
         },
     },
@@ -323,3 +326,13 @@ TEST_EMAIL_1 = os.getenv('TEST_EMAIL_1')
 TEST_EMAIL_2 = os.getenv('TEST_EMAIL_2')
 
 SITE_URL = os.getenv('SITE_URL')
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+]
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'content-type',
+    'authorization',
+]

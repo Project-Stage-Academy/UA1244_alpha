@@ -1,23 +1,20 @@
 import logging
 
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-from django.contrib.auth import get_user_model
 
 from forum.settings import SITE_URL
 from startups.models import StartUpProfile
 from investors.models import InvestorProfile
 from users.models import Role
-from communications import init_container, MongoDBRepository
-
+from projects.models import Project
 
 User = get_user_model()
 logger = logging.getLogger('django')
 
-container = init_container()
-mongo_container = container.resolve(MongoDBRepository)
 
 class NotificationType(models.IntegerChoices):
     """Notification type class (IntegerChoices)
@@ -40,14 +37,16 @@ class NotificationStatus(models.IntegerChoices):
     UNREAD = 0, _('Unread')
     READ = 1, _('Read')
 
+
 class NotificationDeliveryStatus(models.IntegerChoices):
-    """Notification delivary status class (IntegerChoices)
+    """Notification delivery status class (IntegerChoices)
     
     - FAILED: 0
     - SENT: 1
     """
     FAILED = 0, _('Failed')
     SENT = 1, _('Sent')
+
 
 class Notification(models.Model):
     """Notification model
@@ -57,8 +56,9 @@ class Notification(models.Model):
     - status(IntegerField): notification status (unread/read)
     - investor(ForeignKey): associated investor's id
     - startup(ForeignKey): associated startup's id
+    - project(ForeignKey): associated project's id
     - message_id(CharField): associated message id
-    - delivery_status(BooleanField): notification delivary status (sent/failed)
+    - delivery_status(BooleanField): notification delivery status (sent/failed)
     - created_at(DateTimeField)
     - sent_at(DateTimeField)
     - read_at(DateTimeField)
@@ -69,17 +69,22 @@ class Notification(models.Model):
         choices=NotificationStatus.choices, default=NotificationStatus.UNREAD)
     investor = models.ForeignKey(InvestorProfile, on_delete=models.CASCADE)
     startup = models.ForeignKey(StartUpProfile, on_delete=models.CASCADE)
+
+    project = models.ForeignKey(Project, blank=True, null=True, on_delete=models.CASCADE)
     message_id = models.CharField(max_length=24, blank=True, null=True)
+    
     delivery_status = models.IntegerField(
-         choices=NotificationDeliveryStatus, blank=True, null=True)
+        choices=NotificationDeliveryStatus, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(blank=True, null=True)
     read_at = models.DateTimeField(blank=True, null=True, default=None)
 
     def __str__(self):
         type_ = NotificationType(self.notification_type).label
+        if self.project:
+            return f'{type_}: {self.investor} -> {self.project} {self.sent_at if self.sent_at else ""}'
         return f'{type_}: {self.investor} -> {self.startup}' \
-        + f' {self.sent_at if self.sent_at else ""}'
+            + f' {self.sent_at if self.sent_at else ""}'
 
     def set_read_status(self, read):
         """Set notification status to READ or UNREAD"""
@@ -103,22 +108,29 @@ class Notification(models.Model):
     def get_associated_profile_url(self):
         """Get URL to associated profile depending on notification type"""
         startup = self.startup.user_id
-        startupt_url = f'{SITE_URL}{reverse("startup-profile-by-id", args=[startup.id])}'
+        startup_url = f'{SITE_URL}{reverse("startup-profile-by-id", args=[startup.id])}'
         investor = self.investor.user
         investor_url = f'{SITE_URL}{reverse("investor-profile-by-id", args=[investor.id])}'
 
+        if self.project:
+            project_url = f'{SITE_URL}{reverse("project-by-id", args=[self.project.project_id])}' 
+            
+        chat_room_url = f'{SITE_URL}communications/chatrooms/<your_room_oid>/messages/'
+        associated_url = None
+
+        
         match self.notification_type:
             case NotificationType.FOLLOW:
                 associated_url = investor_url
             case NotificationType.UPDATE:
-                associated_url = startupt_url
+                if self.project:
+                    associated_url = project_url
+                associated_url = startup_url
+
             case NotificationType.MESSAGE:
-                return None
+                associated_url = chat_room_url
 
         return associated_url
-
-    def get_message_participants(self):
-        return mongo_container.message_participants(self.message_id)
 
     def get_role_profile(self, role):
         """get startup or investor fields by role name"""
@@ -183,8 +195,8 @@ class Notification(models.Model):
                 roles = receiver_user.roles.all()
                 if roles.exists():
                     allowed_notifications = RolesNotifications.objects.filter(
-                            notification_type=self.notification_type,
-                            role__in=roles
+                        notification_type=self.notification_type,
+                        role__in=roles
                     )
                     if allowed_notifications.exists():
                         preferences = NotificationPreferences.get(
@@ -203,7 +215,7 @@ class RolesNotifications(models.Model):
     Fields:
     - role (ForeignKey): role id
     - notification_type(IntegerField): notification type from NotificationType Integerchoices class
-    
+
     Default (fixtures):
     - Startup: 1 (FOLLOW), 2 (MESSAGE)
     - Investor: 2 (MESSAGE), 3 (UPDATE)"""
