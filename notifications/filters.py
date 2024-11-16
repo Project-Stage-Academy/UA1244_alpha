@@ -11,7 +11,8 @@ class NotificationFilter(FilterSet):
     - status
     - delivery_status
     - investor__id
-    - startup__id"""
+    - startup__id
+    """
     class Meta:
         model = Notification
         fields = {

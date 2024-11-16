@@ -77,7 +77,7 @@ class Notification(models.Model):
         choices=NotificationDeliveryStatus, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(blank=True, null=True)
-    read_at = models.DateTimeField(blank=True, null=True)
+    read_at = models.DateTimeField(blank=True, null=True, default=None)
 
     def __str__(self):
         type_ = NotificationType(self.notification_type).label
@@ -164,8 +164,6 @@ class Notification(models.Model):
                 role_name = Role.objects.get(id=role.role_id).name
                 receiver_profile = self.get_role_profile(role_name)
 
-                logger.error(role.role_id, receiver_profile, receiver_profile.get_user(),
-                             Notification.notification_type)
                 preferences = NotificationPreferences.objects.get(
                     user_id=receiver_profile.get_user(),
                     role=role.role_id,

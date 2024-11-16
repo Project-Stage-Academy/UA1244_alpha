@@ -8,7 +8,8 @@ from startups.views import (
 )
 from notifications.views import (
     ProfileNotificationSettingsView,
-    ProfileNotificationSettingsByIDView
+    ProfileNotificationSettingsByIDView,
+    ProfileNotificationsListView
 )
 
 
@@ -25,4 +26,6 @@ urlpatterns = [
          ProfileNotificationSettingsByIDView.as_view(), 
          name='startup-notification-settings-by-id'
     ),
+    path('startup/<int:pk>/notifications/', ProfileNotificationsListView.as_view(),
+         name='startup-notifications'),
 ]

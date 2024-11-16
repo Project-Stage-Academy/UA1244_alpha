@@ -48,6 +48,18 @@ def send_notification(sender, instance, created, **kwargs):
             send_notification_email.delay(notification_id=instance.id)
 
 
+@receiver(post_save, sender=StartUpProfile)
+def create_notification_on_startup_update(sender, instance, **kwargs):
+    """Create notifications for investor when startyp was updated"""
+
+    tracking = InvestmentTracking.objects.filter(startup=instance)
+    for track in tracking:
+        create_notification.delay(
+            investor_id=track.investor.id,
+            startup_id=instance.id,
+            type_=NotificationType.UPDATE
+        )
+
 @receiver(post_save, sender=InvestorProfile)
 @receiver(post_save, sender=StartUpProfile)
 def setup_notification_settings(sender, instance, created, **kwargs):

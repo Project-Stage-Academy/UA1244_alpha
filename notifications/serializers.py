@@ -12,6 +12,7 @@ class NotificationForInvestorSerializersList(serializers.ModelSerializer):
         fields = ['notification_type', 'notification_type_display', 'startup', 'created_at', 'sent_at']
         read_only_fields = ['notification_type', 'startup', 'message_id', 'created_at', 'sent_at']
 
+
         
 class NotificationSerializer(serializers.ModelSerializer):
     """Notification Serializer"""
