@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: communications
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: communications
+  template:
+    metadata:
+      labels:
+        app: communications
+    spec:
+      containers:
+      - name: communications
+        image: saberan/communications:latest
+        imagePullPolicy: IfNotPresent
+        command: ["daphne", "-p", "8001", "-b", "0.0.0.0", "forum.asgi:application"]
+        ports:
+        - containerPort: 8001
+        envFrom:
+        - configMapRef:
+            name: forum-config

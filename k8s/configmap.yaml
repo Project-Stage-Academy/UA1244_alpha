@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forum-config
+data:
+  DJANGO_ENV:
+  DJANGO_LOG_LEVEL:
+  DJANGO_ALLOWED_HOSTS:
+  DB_NAME:
+  DB_HOST:
+  DB_PORT:
+  REDIS_HOST:
+  CELERY_BROKER_URL:
+  MONGO_URI:
+  MONGO_DB_NAME:
+  MONGO_COLLECTION_NAME:

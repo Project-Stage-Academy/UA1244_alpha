@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flower
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flower
+  template:
+    metadata:
+      labels:
+        app: flower
+    spec:
+      containers:
+      - name: flower
+        image: saberan/flower:latest
+        ports:
+          - containerPort: 5555
+        env:
+          - name: FLOWER_PORT
+            value: "5555"
+          - name: REDIS_HOST
+            value: redis
+          - name: REDIS_PORT
+            value: "6379"
+        command: ["celery", "-A", "forum.celery.app", "flower", "--broker=redis://$(REDIS_HOST):$(REDIS_PORT)/0"]

@@ -14,7 +14,6 @@ from .models import (
     NotificationDeliveryStatus,
 )
 
-
 User = get_user_model()
 
 class NotificationTest(TestCase):

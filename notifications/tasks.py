@@ -5,6 +5,10 @@ from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.utils import timezone
 
+
+from forum.settings import DEFAULT_FROM_EMAIL, SITE_URL
+from .models import Notification, NotificationType
+
 from communications.di_container import init_container
 from communications.repositories.base import BaseMessagesRepository
 from forum.settings import DEFAULT_FROM_EMAIL
