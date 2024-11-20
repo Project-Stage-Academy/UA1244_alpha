@@ -1,69 +1,71 @@
-from dataclasses import asdict
-from rest_framework.views import APIView
-from rest_framework.response import Response
+import logging
 from rest_framework import status
-from .serializers import MessageSerializer, ChatRoomSerializer
-from communications import init_container, MongoDBRepository
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-container = init_container()
-mongo_container = container.resolve(MongoDBRepository)
+from .domain.exceptions.base import ApplicationException
+from .permissions import IsOwnerOrRecipient
+from .logic import ChatRoomService, MessageService, ListMessagesService
+
+logger = logging.getLogger(__name__)
 
 
 class CreateChatRoomView(APIView):
     """
     View for creating a new chat room between a startup and an investor.
     """
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = ChatRoomSerializer(data=request.data)
-        if serializer.is_valid():
-            chat_room = serializer.create(serializer.validated_data)
-            return Response({'room_id': str(chat_room.room_id)}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            chat_room = ChatRoomService.create_chat_room(request.data)
+            return Response({'room_oid': str(chat_room.oid)}, status=status.HTTP_201_CREATED)
+        except ValueError as e:
+            return Response(e.args[0], status=status.HTTP_400_BAD_REQUEST)
+        except ApplicationException as e:
+            logger.error(f"Failed to create chat room: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to create chat room due to server error.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class SendMessageView(APIView):
     """
     View for sending a message in a specific chat room.
     """
+    permission_classes = (IsOwnerOrRecipient, IsAuthenticated)
 
-    def post(self, request, room_id):
-        """
-        Sends a message in the specified chat room.
-        """
-        request_data = request.data.copy()
-        request_data['room_id'] = room_id
-        if 'sender_id' not in request_data:
-            return Response({'error': 'sender_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        serializer = MessageSerializer(data=request_data)
-        if serializer.is_valid():
-            message = serializer.create(serializer.validated_data)
-            mongo_container.add_message(room_id, message)
-            return Response({'message_id': str(message.oid)}, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request, room_oid):
+        try:
+            message = MessageService.send_message(request.data, room_oid)
+            return Response(data={'message_id': str(message.oid)}, status=status.HTTP_201_CREATED)
+        except ValueError as e:
+            return Response(data=e.args[0], status=status.HTTP_400_BAD_REQUEST)
+        except ApplicationException as e:
+            logger.error(f"Failed to send message in room {room_oid}: {e}", exc_info=True)
+            return Response(
+                data={'error': 'Failed to send message due to server error.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class ListMessagesView(APIView):
     """
     View for listing all messages in a specific chat room.
     """
+    permission_classes = (IsOwnerOrRecipient, IsAuthenticated)
 
-    def get(self, request, room_id):
-        """
-        Retrieve all messages in a specific chat room, sorted by creation date.
-
-        """
-        chat_room = mongo_container.get_chatroom(room_id)
-
-        if chat_room:
-            message_list = sorted(
-                (asdict(msg) for msg in chat_room.messages),
-                key=lambda msg: msg.get('created_at'),
-                reverse=False
-            )
+    def get(self, request, room_oid):
+        try:
+            message_list = ListMessagesService.list_messages(room_oid)
             return Response(message_list, status=status.HTTP_200_OK)
-
-        return Response({'error': 'Chat room not found.'}, status=status.HTTP_404_NOT_FOUND)
-
+        except ValueError as e:
+            return Response(data=e.args[0], status=status.HTTP_404_NOT_FOUND)
+        except ApplicationException as e:
+            logger.error(f"Failed to list messages for room {room_oid}: {e}", exc_info=True)
+            return Response(
+                data={'error': 'Failed to retrieve messages due to server error.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
